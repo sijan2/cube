@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
+import { renderTrpcPanel } from 'trpc-panel';
 import dotenv from 'dotenv';
 import { appRouter } from './router';
 
@@ -23,8 +24,20 @@ app.use(
   createExpressMiddleware({
     router: appRouter,
     createContext: () => ({}),
+    batching: {
+      enabled: true,
+    },
   })
 );
+
+// tRPC Panel - GUI for testing
+app.use('/panel', (_req, res) => {
+  return res.send(
+    renderTrpcPanel(appRouter, {
+      url: `http://localhost:${port}/trpc`,
+    })
+  );
+});
 
 // Health check endpoint
 app.get('/health', (_req, res) => {
@@ -38,5 +51,6 @@ app.get('/health', (_req, res) => {
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
   console.log(`📡 tRPC endpoint: http://localhost:${port}/trpc`);
+  console.log(`🎯 tRPC Panel GUI: http://localhost:${port}/panel`);
   console.log(`🌴 Poke API configured: ${!!process.env.POKE_API_KEY}`);
 });
