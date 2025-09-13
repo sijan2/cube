@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 
 export const Route = createFileRoute('/')({
@@ -33,7 +33,7 @@ function App() {
     <div className="min-h-screen bg-white">
       {/* Navigation */}
       <nav className="flex items-center justify-between p-6 max-w-7xl mx-auto">
-        <div className="text-2xl font-bold">mcp³</div>
+        <div className="text-2xl font-bold">Cube</div>
         <div className="hidden md:flex items-center gap-8">
           <button className="text-gray-600 hover:text-gray-900 flex items-center gap-1">
             Getting Started <span className="text-xs">▾</span>
@@ -43,9 +43,9 @@ function App() {
           </button>
           <button className="text-gray-600 hover:text-gray-900">Pricing</button>
         </div>
-        <button className="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2">
-          Download <span>→</span>
-        </button>
+        <Link to="/login" className="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2">
+          Login <span>→</span>
+        </Link>
       </nav>
 
       {/* Hero Section */}
@@ -63,9 +63,9 @@ function App() {
             you ready to ace every interview.
           </p>
           
-          <button className="animate-in opacity-0 transform translate-y-5 blur-sm bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2">
-            Try beta <span>→</span>
-          </button>
+          <Link to="/login" className="animate-in opacity-0 transform translate-y-5 blur-sm bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2">
+            Try now <span>→</span>
+          </Link>
         </div>
         
         {/* Video/Image placeholder */}
