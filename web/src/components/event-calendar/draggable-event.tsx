@@ -6,10 +6,10 @@ import { CSS } from "@dnd-kit/utilities";
 import { differenceInDays } from "date-fns";
 
 import {
-  CalendarEvent,
   EventItem,
   useCalendarDnd,
-} from "@/components/event-calendar/event-calendar";
+} from "@/components/event-calendar";
+import type { CalendarEvent } from "@/components/event-calendar";
 
 interface DraggableEventProps {
   event: CalendarEvent;

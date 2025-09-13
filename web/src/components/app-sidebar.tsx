@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
+import { Link } from "@tanstack/react-router";
 import { RiCheckLine } from "@remixicon/react";
 import { useCalendarContext } from "@/components/event-calendar/calendar-context";
 import { etiquettes } from "@/components/big-calendar";
@@ -42,7 +42,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     >
       <SidebarHeader>
         <div className="flex justify-between items-center gap-2">
-          <Link className="inline-flex" href="/">
+          <Link to="/" className="inline-flex">
             <span className="sr-only">Logo</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"

@@ -7,7 +7,7 @@ export const Route = createFileRoute('/login')({
 
 function LoginPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="light min-h-screen bg-white">
       {/* Navigation */}
       <nav className="flex items-center justify-between p-6 max-w-7xl mx-auto">
         <Link to="/" className="text-2xl font-bold">Cube</Link>
