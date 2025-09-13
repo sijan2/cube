@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm run dev:*)",
+      "Bash(pnpm run:*)"
+    ],
+    "additionalDirectories": [
+      "/Users/sijan/hackmit/ui-experiments/apps/experiment-06"
+    ]
+  }
+}

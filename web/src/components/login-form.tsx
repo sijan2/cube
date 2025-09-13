@@ -2,16 +2,25 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useNavigate } from "@tanstack/react-router"
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
+  const navigate = useNavigate()
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    // Navigate to dashboard after login
+    navigate({ to: '/dashboard' })
+  }
+  
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
+    <form className={cn("flex flex-col gap-6", className)} onSubmit={handleSubmit} {...props}>
       <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-bold">Login to your account</h1>
-        <p className="text-muted-foreground text-sm text-balance">
+        <h1 className="text-2xl font-bold text-gray-900">Login to your account</h1>
+        <p className="text-gray-600 text-sm text-balance">
           Enter your email below to login to your account
         </p>
       </div>
@@ -35,8 +44,8 @@ export function LoginForm({
         <Button type="submit" className="w-full">
           Login
         </Button>
-        <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-          <span className="bg-background text-muted-foreground relative z-10 px-2">
+        <div className="after:border-gray-200 relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
+          <span className="bg-white text-gray-600 relative z-10 px-2">
             Or continue with
           </span>
         </div>
