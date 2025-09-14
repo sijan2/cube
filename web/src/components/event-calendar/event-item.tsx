@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import type { DraggableAttributes } from "@dnd-kit/core";
 import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
 import { differenceInMinutes, format, getMinutes, isPast } from "date-fns";
@@ -11,6 +11,7 @@ import {
   type CalendarEvent,
 } from "@/components/event-calendar";
 import { cn } from "@/lib/utils";
+import { SparklesIcon, type SparklesIconHandle } from "@/components/SparklesIcon";
 
 // Using date-fns format with custom formatting:
 // 'h' - hours (1-12)
@@ -33,6 +34,8 @@ interface EventWrapperProps {
   dndAttributes?: DraggableAttributes;
   onMouseDown?: (e: React.MouseEvent) => void;
   onTouchStart?: (e: React.TouchEvent) => void;
+  onMouseEnter?: (e: React.MouseEvent) => void;
+  onMouseLeave?: (e: React.MouseEvent) => void;
 }
 
 // Shared wrapper component for event styling
@@ -49,6 +52,8 @@ function EventWrapper({
   dndAttributes,
   onMouseDown,
   onTouchStart,
+  onMouseEnter,
+  onMouseLeave,
 }: EventWrapperProps) {
   // Always use the currentTime (if provided) to determine if the event is in the past
   const displayEnd = currentTime
@@ -63,7 +68,7 @@ function EventWrapper({
   return (
     <button
       className={cn(
-        "focus-visible:border-ring focus-visible:ring-ring/50 flex h-full w-full overflow-hidden px-1 text-left font-medium backdrop-blur-md transition outline-none select-none focus-visible:ring-[3px] data-dragging:cursor-grabbing data-dragging:shadow-lg data-past-event:line-through sm:px-2",
+        "group focus-visible:border-ring focus-visible:ring-ring/50 flex h-full w-full overflow-hidden px-1 text-left font-medium backdrop-blur-md transition outline-none select-none focus-visible:ring-[3px] data-dragging:cursor-grabbing data-dragging:shadow-lg data-past-event:line-through sm:px-2",
         getEventColorClasses(event.color),
         getBorderRadiusClasses(isFirstDay, isLastDay),
         className,
@@ -72,6 +77,8 @@ function EventWrapper({
       data-past-event={isEventInPast || undefined}
       onClick={onClick}
       onMouseDown={onMouseDown}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       onTouchStart={onTouchStart}
       {...dndListeners}
       {...dndAttributes}
@@ -115,6 +122,7 @@ export function EventItem({
   onTouchStart,
 }: EventItemProps) {
   const eventColor = event.color;
+  const sparklesRef = useRef<SparklesIconHandle | null>(null);
 
   // Use the provided currentTime (for dragging) or the event's actual time
   const displayStart = useMemo(() => {
@@ -164,16 +172,25 @@ export function EventItem({
         dndAttributes={dndAttributes}
         onMouseDown={onMouseDown}
         onTouchStart={onTouchStart}
+        onMouseEnter={() => sparklesRef.current?.startAnimation()}
+        onMouseLeave={() => sparklesRef.current?.stopAnimation()}
       >
         {children || (
-          <span className="truncate">
-            {!event.allDay && (
-              <span className="truncate sm:text-xs font-normal opacity-70 uppercase">
-                {formatTimeWithOptionalMinutes(displayStart)}{" "}
-              </span>
-            )}
-            {event.title}
-          </span>
+          <div className="flex w-full items-center justify-between gap-1">
+            <span className="truncate">
+              {!event.allDay && (
+                <span className="truncate sm:text-xs font-normal opacity-70 uppercase">
+                  {formatTimeWithOptionalMinutes(displayStart)}{" "}
+                </span>
+              )}
+              {event.title}
+            </span>
+            <SparklesIcon
+              ref={sparklesRef}
+              className="shrink-0 opacity-0 group-hover:opacity-80 transition-opacity pointer-events-none"
+              size={12}
+            />
+          </div>
         )}
       </EventWrapper>
     );
@@ -198,19 +215,35 @@ export function EventItem({
         dndAttributes={dndAttributes}
         onMouseDown={onMouseDown}
         onTouchStart={onTouchStart}
+        onMouseEnter={() => sparklesRef.current?.startAnimation()}
+        onMouseLeave={() => sparklesRef.current?.stopAnimation()}
       >
         {durationMinutes < 45 ? (
-          <div className="truncate">
-            {event.title}{" "}
-            {showTime && (
-              <span className="opacity-70">
-                {formatTimeWithOptionalMinutes(displayStart)}
-              </span>
-            )}
+          <div className="flex w-full items-center justify-between gap-1">
+            <div className="truncate">
+              {event.title}{" "}
+              {showTime && (
+                <span className="opacity-70">
+                  {formatTimeWithOptionalMinutes(displayStart)}
+                </span>
+              )}
+            </div>
+            <SparklesIcon
+              ref={sparklesRef}
+              className="shrink-0 opacity-0 group-hover:opacity-80 transition-opacity pointer-events-none"
+              size={12}
+            />
           </div>
         ) : (
           <>
-            <div className="truncate font-medium">{event.title}</div>
+            <div className="flex w-full items-center justify-between gap-1">
+              <div className="truncate font-medium">{event.title}</div>
+              <SparklesIcon
+                ref={sparklesRef}
+                className="shrink-0 opacity-0 group-hover:opacity-80 transition-opacity pointer-events-none"
+                size={12}
+              />
+            </div>
             {showTime && (
               <div className="truncate font-normal opacity-70 sm:text-xs uppercase">
                 {getEventTime()}
@@ -226,18 +259,27 @@ export function EventItem({
   return (
     <button
       className={cn(
-        "focus-visible:border-ring focus-visible:ring-ring/50 flex w-full flex-col gap-1 rounded p-2 text-left transition outline-none focus-visible:ring-[3px] data-past-event:line-through data-past-event:opacity-90",
+        "group focus-visible:border-ring focus-visible:ring-ring/50 flex w-full flex-col gap-1 rounded p-2 text-left transition outline-none focus-visible:ring-[3px] data-past-event:line-through data-past-event:opacity-90",
         getEventColorClasses(eventColor),
         className,
       )}
       data-past-event={isPast(new Date(event.end)) || undefined}
       onClick={onClick}
       onMouseDown={onMouseDown}
+      onMouseEnter={() => sparklesRef.current?.startAnimation()}
+      onMouseLeave={() => sparklesRef.current?.stopAnimation()}
       onTouchStart={onTouchStart}
       {...dndListeners}
       {...dndAttributes}
     >
-      <div className="text-sm font-medium">{event.title}</div>
+      <div className="flex w-full items-center justify-between">
+        <div className="text-sm font-medium truncate">{event.title}</div>
+        <SparklesIcon
+          ref={sparklesRef}
+          className="shrink-0 opacity-0 group-hover:opacity-80 transition-opacity pointer-events-none"
+          size={14}
+        />
+      </div>
       <div className="text-xs opacity-70">
         {event.allDay ? (
           <span>All day</span>

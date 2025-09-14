@@ -139,6 +139,46 @@ app.use('/panel', (_req, res) => {
   );
 });
 
+// New endpoint to proxy SMS sending
+app.post('/api/send-sms', async (req, res) => {
+  const { message } = req.body;
+
+  if (!message) {
+    return res.status(400).json({ error: 'Message is required' });
+  }
+
+  const API_KEY = process.env.POKE_API_KEY;
+
+  if (!API_KEY) {
+    console.error('POKE_API_KEY is not set on the server.');
+    return res.status(500).json({ error: 'Server configuration error: POKE_API_KEY is missing.' });
+  }
+
+  try {
+    const pokeResponse = await fetch('https://poke.com/api/v1/inbound-sms/webhook', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ message })
+    });
+
+    const data = await pokeResponse.json();
+
+    if (!pokeResponse.ok) {
+      console.error('Poke API returned an error:', { status: pokeResponse.status, body: data });
+      return res.status(pokeResponse.status).json(data);
+    }
+
+    res.status(200).json(data);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error('Error proxying request to Poke API:', errorMessage);
+    res.status(500).json({ error: 'Failed to proxy request.', details: errorMessage });
+  }
+});
+
 // Health check endpoint
 app.get('/health', (_req, res) => {
   res.json({ 

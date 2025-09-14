@@ -26,7 +26,6 @@ import {
   AgendaView,
   CalendarDndProvider,
   DayView,
-  EventDialog,
   EventGap,
   EventHeight,
   MonthView,
@@ -44,7 +43,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
-import ThemeToggle from "@/components/theme-toggle";
+// import ThemeToggle from "@/components/theme-toggle";
 import Participants from "@/components/participants";
 
 export interface EventCalendarProps {
@@ -71,19 +70,14 @@ export function EventCalendar({
   // Use the shared calendar context instead of local state
   const { currentDate, setCurrentDate } = useCalendarContext();
   const [view, setView] = useState<CalendarView>(initialView);
-  const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
-    null,
-  );
+  // Removed EventDialog usage; keep UI simple and use floating chat panel instead
   const { open } = useSidebar();
 
   // Add keyboard shortcuts for view switching
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Skip if user is typing in an input, textarea or contentEditable element
-      // or if the event dialog is open
       if (
-        isEventDialogOpen ||
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
         (e.target instanceof HTMLElement && e.target.isContentEditable)
@@ -116,7 +110,7 @@ export function EventCalendar({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isEventDialogOpen]);
+  }, []);
 
   const handlePrevious = () => {
     let newDate: Date;
@@ -162,8 +156,10 @@ export function EventCalendar({
 
   const handleEventSelect = (event: CalendarEvent) => {
     console.log("Event selected:", event); // Debug log
-    setSelectedEvent(event);
-    setIsEventDialogOpen(true);
+    // Dispatch to floating chat to open the lightweight panel instead of dialog
+    window.dispatchEvent(
+      new CustomEvent("floating-chat:open-panel", { detail: { event } }),
+    );
   };
 
   const handleEventCreate = (startTime: Date) => {
@@ -184,21 +180,22 @@ export function EventCalendar({
       startTime.setMilliseconds(0);
     }
 
+    // Instead of opening the dialog, open the floating chat panel with context
     const newEvent: CalendarEvent = {
       id: "",
-      title: "",
+      title: "New event",
       start: startTime,
       end: addHoursToDate(startTime, 1),
       allDay: false,
     };
-    setSelectedEvent(newEvent);
-    setIsEventDialogOpen(true);
+    window.dispatchEvent(
+      new CustomEvent("floating-chat:open-panel", { detail: { event: newEvent } }),
+    );
   };
 
   const handleEventSave = (event: CalendarEvent) => {
     if (event.id) {
       onEventUpdate?.(event);
-      // Show toast notification when an event is updated
       toast(`Event "${event.title}" updated`, {
         description: format(new Date(event.start), "MMM d, yyyy"),
         position: "bottom-left",
@@ -208,21 +205,16 @@ export function EventCalendar({
         ...event,
         id: Math.random().toString(36).substring(2, 11),
       });
-      // Show toast notification when an event is added
       toast(`Event "${event.title}" added`, {
         description: format(new Date(event.start), "MMM d, yyyy"),
         position: "bottom-left",
       });
     }
-    setIsEventDialogOpen(false);
-    setSelectedEvent(null);
   };
 
   const handleEventDelete = (eventId: string) => {
     const deletedEvent = events.find((e) => e.id === eventId);
     onEventDelete?.(eventId);
-    setIsEventDialogOpen(false);
-    setSelectedEvent(null);
 
     // Show toast notification when an event is deleted
     if (deletedEvent) {
@@ -348,8 +340,17 @@ export function EventCalendar({
                 variant="outline"
                 className="max-sm:h-8 max-sm:px-2.5!"
                 onClick={() => {
-                  setSelectedEvent(null); // Ensure we're creating a new event
-                  setIsEventDialogOpen(true);
+                  const now = new Date();
+                  const newEvent: CalendarEvent = {
+                    id: "",
+                    title: "New event",
+                    start: now,
+                    end: addHoursToDate(now, 1),
+                    allDay: false,
+                  };
+                  window.dispatchEvent(
+                    new CustomEvent("floating-chat:open-panel", { detail: { event: newEvent } }),
+                  );
                 }}
               >
                 New Event
@@ -421,16 +422,7 @@ export function EventCalendar({
           )}
         </div>
 
-        <EventDialog
-          event={selectedEvent}
-          isOpen={isEventDialogOpen}
-          onClose={() => {
-            setIsEventDialogOpen(false);
-            setSelectedEvent(null);
-          }}
-          onSave={handleEventSave}
-          onDelete={handleEventDelete}
-        />
+        {/* EventDialog removed intentionally */}
       </CalendarDndProvider>
     </div>
   );
