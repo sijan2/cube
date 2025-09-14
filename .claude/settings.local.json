@@ -7,7 +7,17 @@
       "Bash(git stash push:*)",
       "Bash(pnpm install:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(find:*)",
+      "WebFetch(domain:ai-sdk.dev)",
+      "WebSearch",
+      "Bash(npx:*)",
+      "Bash(npm install:*)",
+      "Bash(grep:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)"
     ],
     "additionalDirectories": [
       "/Users/sijan/hackmit/ui-experiments/apps/experiment-06"

@@ -3,7 +3,10 @@
 import * as React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Calendar, Paperclip, SendHorizontal, Sparkles, X, ChevronDown, MessageSquare } from "lucide-react";
+import { Calendar, Paperclip, SendHorizontal, Sparkles, X, ChevronDown, MessageSquare, Mic, MicOff, Volume2, VolumeX, AlertCircle, CheckCircle } from "lucide-react";
+import { ThinkingAnimation } from "./thinking-animation-clean";
+import { MessageContent } from "./message-content";
+import { AIThinking, MessageAvatar, MessageActions, SuggestedPrompts, ScrollToBottom } from "./ai-chat-components";
 import { cn } from "@/lib/utils";
 
 type FloatingChatInputProps = {
@@ -42,10 +45,26 @@ export function FloatingChatInput({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [currentQuery, setCurrentQuery] = useState("");
+  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
+  const [pollingStartTime, setPollingStartTime] = useState<number | null>(null);
+  const [isActivelyPolling, setIsActivelyPolling] = useState(false);
+  const [networkError, setNetworkError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const [recognition, setRecognition] = useState<any>(null);
+  const [synthesis, setSynthesis] = useState<SpeechSynthesis | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const historyRef = useRef<HTMLDivElement>(null);
   const inactivityTimerRef = useRef<number | null>(null);
   const hoverLeaveTimerRef = useRef<number | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   // Auto-grow the textarea up to 120px
   const adjustTextareaHeight = (el: HTMLTextAreaElement | null) => {
@@ -57,6 +76,40 @@ export function FloatingChatInput({
   useEffect(() => {
     adjustTextareaHeight(textareaRef.current);
   }, [value]);
+
+  // Initialize speech recognition and synthesis
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Initialize Speech Recognition
+      if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onstart = () => setIsListening(true);
+        recognition.onend = () => setIsListening(false);
+        recognition.onresult = (event) => {
+          const transcript = event.results[0]?.item(0)?.transcript;
+          if (transcript) {
+            setValue(prev => prev + (prev ? ' ' : '') + transcript);
+          }
+        };
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error:', event.error);
+          setIsListening(false);
+        };
+
+        setRecognition(recognition);
+      }
+
+      // Initialize Speech Synthesis
+      if ('speechSynthesis' in window) {
+        setSynthesis(window.speechSynthesis);
+      }
+    }
+  }, []);
 
   // Listen for calendar clicks: open a lightweight info panel above the input
   useEffect(() => {
@@ -95,11 +148,22 @@ export function FloatingChatInput({
     const handleClear = () => setMessages([]);
     window.addEventListener("floating-chat:append-message", handleAppend as EventListener);
     window.addEventListener("floating-chat:clear-messages", handleClear as EventListener);
+
+    // Auto-speak assistant messages if enabled
+    const handleSpeakMessage = (e: Event) => {
+      const ce = e as CustomEvent<any>;
+      const text = ce.detail?.text;
+      if (text) {
+        speakText(text);
+      }
+    };
+    window.addEventListener("floating-chat:speak-message", handleSpeakMessage as EventListener);
     return () => {
       window.removeEventListener("floating-chat:open-panel", handleOpenPanel as EventListener);
       window.removeEventListener("floating-chat:close-panel", handleClosePanel);
       window.removeEventListener("floating-chat:append-message", handleAppend as EventListener);
       window.removeEventListener("floating-chat:clear-messages", handleClear as EventListener);
+      window.removeEventListener("floating-chat:speak-message", handleSpeakMessage as EventListener);
     };
   }, []);
 
@@ -154,6 +218,9 @@ export function FloatingChatInput({
 
     const MESSAGE = text;
 
+    // Store current query for thinking animation
+    setCurrentQuery(MESSAGE);
+
     // Append to local chat history immediately (optimistic)
     setMessages(prev => [
       ...prev,
@@ -164,23 +231,61 @@ export function FloatingChatInput({
     setValue("");
     adjustTextareaHeight(textareaRef.current);
 
+    // Show thinking animation
+    setIsProcessing(true);
+
     try {
-      const response = await fetch("http://localhost:3002/api/send-sms", {
+      const response = await fetch("https://mcpcubed.app.n8n.cloud/webhook/input", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message: MESSAGE }),
+        body: JSON.stringify({
+          message: MESSAGE
+        }),
       });
 
       const data = await response.json();
-      console.log("API Response:", data);
+      console.log("n8n Webhook Response:", data);
 
       if (!response.ok) {
-        console.error("API Error from proxy:", data);
+        console.error("n8n Webhook Error:", data);
+        setIsProcessing(false);
+        setCurrentRequestId(null);
+        setPollingStartTime(null);
+        setIsActivelyPolling(false);
+        setNetworkError("Sorry, I'm having trouble connecting to my services right now. Please try again in a moment.");
+        setTimeout(() => setNetworkError(null), 5000);
+      } else {
+        // Webhook submitted successfully, waiting for SSE response
+        console.log("Webhook submitted successfully, waiting for SSE response");
+        setPollingStartTime(Date.now());
+        setSuccessMessage("Message sent successfully. Waiting for response...");
+        setTimeout(() => setSuccessMessage(null), 3000);
+
+        // Set 10-minute timeout for thinking animation
+        setTimeout(() => {
+          if (isProcessing) {
+            setIsProcessing(false);
+            setCurrentRequestId(null);
+            setPollingStartTime(null);
+            setIsActivelyPolling(false);
+
+            setMessages(prev => [
+              ...prev,
+              { id: `${Date.now()}-${Math.random().toString(36).slice(2,8)}`, role: "assistant", text: "⏰ Your request has been processing for 10 minutes. The mcp² services are handling a complex analysis - you can continue chatting and I'll update you when ready!", at: Date.now() },
+            ]);
+          }
+        }, 600000); // 10 minutes
       }
     } catch (error) {
-      console.error("API Error:", error);
+      console.error("n8n Webhook Error:", error);
+      setIsProcessing(false);
+      setCurrentRequestId(null);
+      setPollingStartTime(null);
+      setIsActivelyPolling(false);
+      setNetworkError("Network error - please check your connection and try again.");
+      setTimeout(() => setNetworkError(null), 5000);
     }
 
     onSubmit?.(text);
@@ -191,10 +296,245 @@ export function FloatingChatInput({
     window.setTimeout(() => setIsMinimized(true), 1200);
   };
 
+  // Voice recording functions
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        // Here you would typically send the audio to a speech-to-text service
+        // For now, we'll use the Web Speech API instead
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const startListening = () => {
+    if (recognition && !isListening) {
+      recognition.start();
+    }
+  };
+
+  const stopListening = () => {
+    if (recognition && isListening) {
+      recognition.stop();
+    }
+  };
+
+  const speakText = (text: string) => {
+    if (synthesis && !isSpeaking) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+      synthesis.speak(utterance);
+    }
+  };
+
+  const stopSpeaking = () => {
+    if (synthesis && isSpeaking) {
+      synthesis.cancel();
+      setIsSpeaking(false);
+    }
+  };
+
+  // Simple SSE connection for broadcast responses
+  const connectToResponseStream = () => {
+    try {
+      const eventSource = new EventSource(`http://localhost:3002/api/chat/stream`);
+      eventSourceRef.current = eventSource;
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          if (data.type === 'response' && data.message) {
+            // Response received via SSE broadcast
+            console.log('Received response via SSE broadcast');
+
+            // Clear any error messages
+            setNetworkError(null);
+            setSuccessMessage(null);
+
+            // Hide thinking animation if we're currently processing
+            setIsProcessing(false);
+            setCurrentRequestId(null);
+            setPollingStartTime(null);
+            setIsActivelyPolling(false);
+
+            // Add assistant response to chat history
+            setMessages(prev => [
+              ...prev,
+              { id: `${Date.now()}-${Math.random().toString(36).slice(2,8)}`, role: "assistant", text: data.message, at: Date.now() },
+            ]);
+
+            // Auto-speak the response if synthesis is available
+            if (synthesis && data.message) {
+              speakText(data.message);
+            }
+          } else if (data.type === 'connected') {
+            console.log('SSE stream connected successfully');
+          }
+        } catch (error) {
+          console.error('Error parsing SSE data:', error);
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error('SSE connection error:', error);
+        eventSource.close();
+        eventSourceRef.current = null;
+
+        // Reconnect after 5 seconds
+        setTimeout(() => {
+          if (!eventSourceRef.current) {
+            connectToResponseStream();
+          }
+        }, 5000);
+      };
+
+    } catch (error) {
+      console.error('Failed to establish SSE connection:', error);
+    }
+  };
+
+  // Polling function as fallback
+  const pollForResponse = async (requestId: string) => {
+    const POLLING_START_DELAY = 60000; // Wait 60 seconds before starting to poll
+    const POLLING_INTERVAL = 5000; // Poll every 5 seconds
+    const TOTAL_TIMEOUT = 600000; // 10 minutes total (600 seconds)
+    const MAX_POLLING_TIME = TOTAL_TIMEOUT - POLLING_START_DELAY; // 540 seconds of actual polling
+    const maxAttempts = Math.floor(MAX_POLLING_TIME / POLLING_INTERVAL); // 108 attempts (540/5)
+
+    let attempts = 0;
+
+    const poll = async () => {
+      // Check if component is still mounted and processing
+      if (!isProcessing || currentRequestId !== requestId) {
+        return; // Stop polling if component unmounted or new request started
+      }
+
+      // Set actively polling flag on first poll attempt
+      if (attempts === 0) {
+        setIsActivelyPolling(true);
+        console.log(`Now actively polling for ${requestId} every 5 seconds...`);
+      }
+
+      try {
+        const response = await fetch(`http://localhost:3002/api/chat/poll/${requestId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+
+          if (data.message) {
+            // Clear polling timeout
+            if (pollingTimeoutRef.current) {
+              clearTimeout(pollingTimeoutRef.current);
+              pollingTimeoutRef.current = null;
+            }
+
+            // Hide thinking animation
+            setIsProcessing(false);
+            setCurrentRequestId(null);
+            setPollingStartTime(null);
+            setIsActivelyPolling(false);
+
+            // Add assistant response to chat history
+            setMessages(prev => [
+              ...prev,
+              { id: `${Date.now()}-${Math.random().toString(36).slice(2,8)}`, role: "assistant", text: data.message, at: Date.now() },
+            ]);
+
+            // Auto-speak the response if synthesis is available
+            if (synthesis && data.message) {
+              speakText(data.message);
+            }
+            return; // Success - stop polling
+          }
+        }
+
+        // Continue polling if no response yet
+        attempts++;
+        if (attempts < maxAttempts) {
+          pollingTimeoutRef.current = setTimeout(poll, POLLING_INTERVAL); // Poll every 5 seconds
+        } else {
+          // Timeout after 10 minutes total
+          setIsProcessing(false);
+          setCurrentRequestId(null);
+          setPollingStartTime(null);
+          setIsActivelyPolling(false);
+
+          setMessages(prev => [
+            ...prev,
+            { id: `${Date.now()}-${Math.random().toString(36).slice(2,8)}`, role: "assistant", text: "⏰ Your request has been processing for 10 minutes. The mcp² services are handling a complex analysis - you can continue chatting and I'll update you when the response is ready!", at: Date.now() },
+          ]);
+        }
+      } catch (error) {
+        console.error("Polling error:", error);
+        attempts++;
+        if (attempts < maxAttempts && isProcessing && currentRequestId === requestId) {
+          pollingTimeoutRef.current = setTimeout(poll, POLLING_INTERVAL); // Continue polling even on error
+        } else {
+          setIsProcessing(false);
+          setCurrentRequestId(null);
+          setPollingStartTime(null);
+          setIsActivelyPolling(false);
+        }
+      }
+    };
+
+    // Start polling after 60 seconds
+    console.log(`Starting polling for ${requestId} in 60 seconds. Will poll every 5 seconds for 9 minutes.`);
+    pollingTimeoutRef.current = setTimeout(poll, POLLING_START_DELAY);
+  };
+
+  // Connect to SSE stream on mount
+  useEffect(() => {
+    connectToResponseStream();
+
+    return () => {
+      if (pollingTimeoutRef.current) {
+        clearTimeout(pollingTimeoutRef.current);
+        pollingTimeoutRef.current = null;
+      }
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+    };
+  }, []);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      if (!isProcessing) {
+        handleSend();
+      }
     } else if (e.key === "Escape") {
       (e.target as HTMLTextAreaElement).blur();
       setIsFocused(false);
@@ -327,7 +667,7 @@ export function FloatingChatInput({
 
           {/* Chat history */}
           <AnimatePresence initial={false}>
-            {messages.length > 0 && (
+            {(messages.length > 0 || isProcessing) && (
               <motion.div
                 key="chat-history"
                 initial={{ opacity: 0, y: 8 }}
@@ -341,29 +681,85 @@ export function FloatingChatInput({
                   className="max-h-60 overflow-y-auto px-3.5 py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                   style={{ overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
                 >
-                  {messages.map(m => (
+                  {messages.map((m, idx) => (
                     <div
                       key={m.id}
                       className={cn(
-                        "mt-1 flex",
-                        m.role === "user" ? "justify-end" : "justify-start",
+                        "mt-3 flex gap-2 group",
+                        m.role === "user" ? "justify-end flex-row-reverse" : "justify-start",
                       )}
                     >
-                      <div
-                        className={cn(
-                          "max-w-[80%] rounded-2xl px-3 py-1.5 text-sm",
-                          m.role === "user"
-                            ? "bg-blue-500 text-white"
-                            : m.role === "assistant"
-                            ? "bg-zinc-100 text-zinc-900 dark:bg-white/10 dark:text-zinc-100"
-                            : "bg-zinc-200 text-zinc-800 dark:bg-white/5 dark:text-zinc-200",
+                      <MessageAvatar role={m.role} />
+                      <div className="flex flex-col gap-1 max-w-[80%]">
+                        <div
+                          className={cn(
+                            "rounded-2xl px-4 py-2.5",
+                            m.role === "user"
+                              ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md"
+                              : m.role === "assistant"
+                              ? "bg-white/95 dark:bg-zinc-800/95 backdrop-blur-sm border border-zinc-200 dark:border-zinc-700 shadow-sm"
+                              : "bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700",
+                          )}
+                        >
+                          <MessageContent
+                            content={m.text}
+                            role={m.role}
+                            className={cn(
+                              m.role === "user" && "!text-white prose-headings:!text-white prose-strong:!text-white prose-em:!text-white/90"
+                            )}
+                          />
+                        </div>
+                        {m.role === "assistant" && (
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <MessageActions
+                              onCopy={() => navigator.clipboard.writeText(m.text)}
+                              onRegenerate={() => console.log("Regenerate", m.id)}
+                              onFeedback={(type) => console.log("Feedback", type, m.id)}
+                            />
+                          </div>
                         )}
-                      >
-                        {m.text}
                       </div>
                     </div>
                   ))}
+
+                  {/* Thinking animation */}
+                  {isProcessing && (
+                    <div className="mt-3 flex gap-2">
+                      <MessageAvatar role="assistant" />
+                      <div className="max-w-[80%]">
+                        <AIThinking
+                          state={isActivelyPolling ? "searching" : "thinking"}
+                          message={isActivelyPolling ? "Searching for your answer..." : "Processing your request..."}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Status Messages */}
+          <AnimatePresence>
+            {(networkError || successMessage) && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="px-3.5 py-2 border-b border-white/20 dark:border-white/10"
+              >
+                {networkError && (
+                  <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+                    <AlertCircle size={16} />
+                    <span>{networkError}</span>
+                  </div>
+                )}
+                {successMessage && (
+                  <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                    <CheckCircle size={16} />
+                    <span>{successMessage}</span>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -392,6 +788,35 @@ export function FloatingChatInput({
             )}
           />
           <div className="flex h-12 shrink-0 items-center gap-1.5 self-end px-2">
+            {/* Voice controls - always visible */}
+            <button
+              type="button"
+              onClick={isSpeaking ? stopSpeaking : () => {}}
+              className={cn(
+                "flex size-8 items-center justify-center rounded-full transition-colors",
+                isSpeaking
+                  ? "bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400"
+                  : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+              )}
+              aria-label={isSpeaking ? "Stop speaking" : "Text to speech"}
+            >
+              {isSpeaking ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            </button>
+
+            <button
+              type="button"
+              onClick={isListening ? stopListening : startListening}
+              className={cn(
+                "flex size-8 items-center justify-center rounded-full transition-colors",
+                isListening
+                  ? "bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 animate-pulse"
+                  : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+              )}
+              aria-label={isListening ? "Stop listening" : "Voice to text"}
+            >
+              {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+            </button>
+
             <AnimatePresence>
               {value && (
                 <>
@@ -434,13 +859,14 @@ export function FloatingChatInput({
             <button
               type="button"
               onClick={handleSend}
-              disabled={!value.trim()}
+              disabled={!value.trim() || isProcessing}
               className={cn(
                 "flex size-8 items-center justify-center rounded-lg bg-blue-500 text-white transition-colors active:scale-[0.98]",
                 "disabled:bg-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed",
                 "dark:disabled:bg-zinc-500",
+                isProcessing && "animate-pulse"
               )}
-              aria-label="Send"
+              aria-label={isProcessing ? "Processing..." : "Send"}
             >
               <SendHorizontal size={16} />
             </button>

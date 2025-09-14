@@ -17,11 +17,14 @@ console.log('GOOGLE_CLIENT_ID configured:', !!process.env.GOOGLE_CLIENT_ID);
 console.log('BETTER_AUTH_SECRET configured:', !!process.env.BETTER_AUTH_SECRET);
 
 const app = express();
-const port = process.env.PORT || 3002;
+const port = process.env.PORT || 3003;
+
+// Simple broadcast for chat responses
+const sseClients = new Set<express.Response>();
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:3000', // Explicit origin
+  origin: ['http://localhost:3000', 'http://localhost:3001'], // Allow both ports
   credentials: true, // Enable cookies
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -217,11 +220,85 @@ app.post('/debug/clear-verification', async (_req, res) => {
   }
 });
 
+// Simple SSE endpoint for chat responses
+app.get('/api/chat/stream', (req, res) => {
+  // Set SSE headers
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': req.headers.origin || '*',
+    'Access-Control-Allow-Credentials': 'true',
+  });
+
+  // Add client to broadcast list
+  sseClients.add(res);
+  console.log(`SSE client connected. Total clients: ${sseClients.size}`);
+
+  // Send initial connection confirmation
+  res.write(`data: ${JSON.stringify({ type: 'connected' })}\n\n`);
+
+  // Handle client disconnect
+  req.on('close', () => {
+    sseClients.delete(res);
+    console.log(`SSE client disconnected. Total clients: ${sseClients.size}`);
+  });
+
+  // Keep connection alive with heartbeat every 30 seconds
+  const heartbeat = setInterval(() => {
+    if (sseClients.has(res)) {
+      try {
+        res.write(`data: ${JSON.stringify({ type: 'heartbeat' })}\n\n`);
+      } catch (error) {
+        clearInterval(heartbeat);
+        sseClients.delete(res);
+      }
+    } else {
+      clearInterval(heartbeat);
+    }
+  }, 30000);
+});
+
+// Simple webhook endpoint for your backend to send chat responses
+app.post('/api/webhook/chat-response', (req, res) => {
+  const { message } = req.body;
+
+  if (!message) {
+    return res.status(400).json({ error: 'message is required' });
+  }
+
+  console.log(`Broadcasting chat response to ${sseClients.size} clients:`, message.substring(0, 100) + '...');
+
+  // Broadcast to all connected SSE clients
+  const messageData = JSON.stringify({ type: 'response', message });
+  const disconnectedClients = new Set<express.Response>();
+
+  for (const client of sseClients) {
+    try {
+      client.write(`data: ${messageData}\n\n`);
+    } catch (error) {
+      console.error('Error sending to SSE client:', error);
+      disconnectedClients.add(client);
+    }
+  }
+
+  // Clean up disconnected clients
+  disconnectedClients.forEach(client => sseClients.delete(client));
+
+  res.json({
+    success: true,
+    clientsNotified: sseClients.size,
+    message: 'Response broadcasted to all connected clients'
+  });
+});
+
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
   console.log(`📡 tRPC endpoint: http://localhost:${port}/trpc`);
   console.log(`🎯 tRPC Panel GUI: http://localhost:${port}/panel`);
   console.log(`🔐 Auth endpoint: http://localhost:${port}/api/auth`);
+  console.log(`💬 Chat Webhook URL: http://localhost:${port}/api/webhook/chat-response`);
+  console.log(`📡 Chat SSE Stream: http://localhost:${port}/api/chat/stream`);
   console.log(`🌴 Poke API configured: ${!!process.env.POKE_API_KEY}`);
   console.log(`🗄️  Database configured: ${!!process.env.DATABASE_URL}`);
   console.log(`🔑 Google OAuth configured: ${!!process.env.GOOGLE_CLIENT_ID}`);
