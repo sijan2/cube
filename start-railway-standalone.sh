@@ -10,8 +10,8 @@ echo "  - Port: $PORT"
 echo "  - LeetCode Site: ${LEETCODE_SITE:-global}"
 echo "  - Node Environment: ${NODE_ENV:-production}"
 
-# Create a proper MCP server with SSE transport
-cat > /app/server/mcp-sse-server.js << 'EOF'
+# Create a proper MCP server with HTTP transport
+cat > /app/server/mcp-http-server.js << 'EOF'
 const express = require('express');
 const cors = require('cors');
 const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
@@ -248,84 +248,61 @@ app.get('/', (req, res) => {
   res.json({
     name: 'LeetCode MCP Server',
     version: '1.0.0',
-    description: 'LeetCode MCP Server with Server-Sent Events (SSE) transport',
+    description: 'LeetCode MCP Server with HTTP transport',
     protocol: 'Model Context Protocol (MCP)',
-    transport: 'Server-Sent Events (SSE)',
+    transport: 'HTTP',
     endpoints: {
-      sse: '/sse',
+      mcp: '/mcp',
       health: '/health'
     },
     connection: {
-      url: 'https://cube-production-3225.up.railway.app/sse',
-      transport: 'sse',
-      format: 'MCP over SSE'
+      url: 'https://cube-production-3225.up.railway.app/mcp',
+      transport: 'http',
+      format: 'MCP over HTTP'
     },
     usage: {
-      format: 'Connect via MCP client using SSE transport',
-      example: 'mcp://https://cube-production-3225.up.railway.app/sse'
+      format: 'Connect via MCP client using HTTP transport',
+      url: 'https://cube-production-3225.up.railway.app/mcp'
     }
   });
 });
 
-// Add GET handler for /mcp to show helpful message
+// Add OPTIONS for CORS preflight
+app.options('/mcp', cors());
+app.options('/mcp/messages', cors());
+
+// MCP HTTP+SSE transport endpoints
+// SSE endpoint for client connections
 app.get('/mcp', (req, res) => {
-  res.json({
-    error: 'MCP endpoint moved',
-    message: 'This MCP server now uses Server-Sent Events (SSE) transport',
-    correct_endpoint: '/sse',
-    connection_url: 'https://cube-production-3225.up.railway.app/sse',
-    note: 'Use an MCP client that supports SSE transport'
-  });
-});
-
-// Store SSE connections
-const sseConnections = new Map();
-
-// SSE endpoint for MCP transport
-app.get('/sse', (req, res) => {
   // Set SSE headers
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
     'Connection': 'keep-alive',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Cache-Control',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   });
 
-  // Generate unique connection ID
-  const connectionId = Date.now() + Math.random();
-  
-  // Store connection
-  sseConnections.set(connectionId, res);
+  // Send endpoint event as required by MCP spec
+  res.write(`event: endpoint\\ndata: ${JSON.stringify({ uri: 'https://cube-production-3225.up.railway.app/mcp/messages' })}\\n\\n`);
 
-  // Send initial connection message
-  res.write(`data: ${JSON.stringify({
-    jsonrpc: '2.0',
-    method: 'notifications/initialized',
-    params: {
-      protocolVersion: '2024-11-05',
-      serverInfo: {
-        name: 'leetcode-mcp-server',
-        version: '1.0.0'
-      },
-      capabilities: {
-        tools: {},
-        resources: {}
-      }
-    }
-  })}\\n\\n`);
+  // Send ping to keep connection alive
+  const pingInterval = setInterval(() => {
+    res.write(`event: ping\\ndata: {}\\n\\n`);
+  }, 30000);
 
   // Handle client disconnect
   req.on('close', () => {
-    sseConnections.delete(connectionId);
-    console.log(`SSE connection ${connectionId} closed`);
+    clearInterval(pingInterval);
+    console.log('SSE connection closed');
   });
 
-  console.log(`SSE connection ${connectionId} established`);
+  console.log('MCP SSE connection established');
 });
 
-// Handle MCP requests via POST to SSE endpoint
-app.post('/sse', async (req, res) => {
+// HTTP POST endpoint for client messages
+app.post('/mcp/messages', async (req, res) => {
   try {
     const request = req.body;
     
@@ -493,14 +470,14 @@ app.post('/sse', async (req, res) => {
 });
 
 app.listen(port, '0.0.0.0', () => {
-  console.log(`🎉 LeetCode MCP SSE Server listening on port ${port}`);
-  console.log(`📊 SSE Endpoint: https://0.0.0.0:${port}/sse`);
-  console.log(`🔧 Protocol: MCP over Server-Sent Events (SSE)`);
+  console.log(`🎉 LeetCode MCP HTTP+SSE Server listening on port ${port}`);
+  console.log(`📊 MCP Endpoint: https://0.0.0.0:${port}/mcp`);
+  console.log(`🔧 Protocol: MCP over HTTP+SSE (compliant with spec)`);
 });
 EOF
 
 # WebSocket dependency already installed via package.json
 
-# Start the MCP SSE server from the server directory where node_modules is
-echo "🔧 Starting MCP SSE server..."
-cd /app/server && node mcp-sse-server.js
+# Start the MCP HTTP server from the server directory where node_modules is
+echo "🔧 Starting MCP HTTP server..."
+cd /app/server && node mcp-http-server.js
