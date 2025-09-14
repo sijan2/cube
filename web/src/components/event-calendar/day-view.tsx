@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useCallback, useEffect } from "react";
 import {
   addHours,
   areIntervalsOverlapping,
@@ -47,6 +47,19 @@ export function DayView({
   onEventSelect,
   onEventCreate,
 }: DayViewProps) {
+  const timeColumnRef = useRef<HTMLDivElement>(null);
+  const eventsColumnRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = useCallback((source: 'time' | 'events') => {
+    return (e: React.UIEvent<HTMLDivElement>) => {
+      const scrollTop = e.currentTarget.scrollTop;
+      if (source === 'time' && eventsColumnRef.current) {
+        eventsColumnRef.current.scrollTop = scrollTop;
+      } else if (source === 'events' && timeColumnRef.current) {
+        timeColumnRef.current.scrollTop = scrollTop;
+      }
+    };
+  }, []);
   const hours = useMemo(() => {
     const dayStart = startOfDay(currentDate);
     return eachHourOfInterval({
@@ -188,6 +201,29 @@ export function DayView({
     "day",
   );
 
+  // Auto-scroll to current time when the current day is visible
+  useEffect(() => {
+    if (!timeColumnRef.current || !eventsColumnRef.current) return;
+
+    const scrollToNow = () => {
+      const now = new Date();
+      // Only auto-scroll when viewing today
+      if (!isSameDay(now, currentDate)) return;
+
+      const nowHour = now.getHours() + now.getMinutes() / 60;
+      const container = eventsColumnRef.current!;
+      const targetPx = nowHour * WeekCellsHeight - container.clientHeight * 0.4;
+      const maxTop = container.scrollHeight - container.clientHeight;
+      const top = Math.max(0, Math.min(targetPx, maxTop));
+
+      container.scrollTop = top;
+      timeColumnRef.current!.scrollTop = top;
+    };
+
+    const id = window.requestAnimationFrame(scrollToNow);
+    return () => window.cancelAnimationFrame(id);
+  }, [currentDate]);
+
   return (
     <div data-slot="day-view" className="contents">
       {showAllDaySection && (
@@ -224,23 +260,29 @@ export function DayView({
         </div>
       )}
 
-      <div className="border-border/70 grid flex-1 grid-cols-[3rem_1fr] border-t sm:grid-cols-[4rem_1fr] overflow-hidden">
-        <div>
+      <div className="border-border/70 grid flex-1 grid-cols-[3rem_1fr] border-t sm:grid-cols-[4rem_1fr] overflow-hidden max-h-[calc(100vh-200px)]">
+        <div 
+          ref={timeColumnRef}
+          className="overflow-y-scroll scrollbar-hide"
+          onScroll={handleScroll('time')}
+        >
           {hours.map((hour, index) => (
             <div
               key={hour.toString()}
               className="border-border/70 relative h-[var(--week-cells-height)] border-b last:border-b-0"
             >
-              {index > 0 && (
-                <span className="bg-background text-muted-foreground/70 absolute -top-3 left-0 flex h-6 w-16 max-w-full items-center justify-end pe-2 text-[10px] sm:pe-4 sm:text-xs">
-                  {format(hour, "h a")}
-                </span>
-              )}
+              <span className="bg-background text-muted-foreground/70 absolute -top-3 left-0 flex h-6 w-16 max-w-full items-center justify-end pe-2 text-[10px] sm:pe-4 sm:text-xs">
+                {format(hour, "h:mm a").replace(":00", "")}
+              </span>
             </div>
           ))}
         </div>
 
-        <div className="relative">
+        <div 
+          ref={eventsColumnRef}
+          className="relative overflow-y-scroll scrollbar-hide"
+          onScroll={handleScroll('events')}
+        >
           {/* Positioned events */}
           {positionedEvents.map((positionedEvent) => (
             <div

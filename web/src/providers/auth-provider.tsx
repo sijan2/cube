@@ -7,6 +7,7 @@ import { createContext, useCallback, useContext, useMemo } from 'react';
 // Define types for our context
 interface AuthContextType {
   session: BetterAuthSession | null | undefined;
+  user: BetterAuthSession['user'] | null | undefined;
   isSessionLoading: boolean;
   sessionError: Error | null;
   refreshSession: () => Promise<void>;
@@ -63,15 +64,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [queryClient]);
 
   // Memoize context value
+  const user = useMemo(() => session?.user, [session]);
+
+  // Memoize context value
   const value = useMemo(
     () => ({
       session,
+      user,
       isSessionLoading,
       sessionError,
       refreshSession,
     }),
     [
       session,
+      user,
       isSessionLoading,
       sessionError,
       refreshSession,

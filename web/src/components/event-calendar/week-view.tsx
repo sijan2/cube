@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import {
   addHours,
   areIntervalsOverlapping,
@@ -52,6 +52,7 @@ export function WeekView({
   onEventSelect,
   onEventCreate,
 }: WeekViewProps) {
+  const gridRef = useRef<HTMLDivElement>(null);
   const days = useMemo(() => {
     const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
     const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
@@ -217,6 +218,29 @@ export function WeekView({
     "week",
   );
 
+  // Auto-scroll to current time when the current week is visible
+  useEffect(() => {
+    const container = gridRef.current;
+    if (!container) return;
+
+    const scrollToNow = () => {
+      const now = new Date();
+      // Only auto-scroll if "now" falls within the shown week
+      const weekStartDate = startOfWeek(currentDate, { weekStartsOn: 0 });
+      const weekEndDate = endOfWeek(currentDate, { weekStartsOn: 0 });
+      if (now < weekStartDate || now > weekEndDate) return;
+
+      const nowHour = now.getHours() + now.getMinutes() / 60;
+      const targetPx = (nowHour - StartHour) * WeekCellsHeight - container.clientHeight * 0.4;
+      const maxTop = container.scrollHeight - container.clientHeight;
+      const top = Math.max(0, Math.min(targetPx, maxTop));
+      container.scrollTop = top;
+    };
+
+    const id = window.requestAnimationFrame(scrollToNow);
+    return () => window.cancelAnimationFrame(id);
+  }, [currentDate]);
+
   return (
     <div data-slot="week-view" className="flex h-full flex-col">
       <div className="bg-background/80 border-border/70 sticky top-0 z-30 grid grid-cols-8 border-y backdrop-blur-md uppercase">
@@ -302,7 +326,7 @@ export function WeekView({
         </div>
       )}
 
-      <div className="grid flex-1 grid-cols-8 overflow-hidden">
+      <div ref={gridRef} className="grid flex-1 grid-cols-8 overflow-y-auto max-h-[calc(100vh-200px)] scrollbar-hide">
         <div className="border-border/70 border-r grid auto-cols-fr">
           {hours.map((hour, index) => (
             <div

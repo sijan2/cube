@@ -11,6 +11,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+  -webkit-overscroll-behavior: none;
 }
 
 code {
@@ -137,6 +139,12 @@ code {
   }
   body {
     @apply bg-background text-foreground;
+    overscroll-behavior: none;
+    -webkit-overscroll-behavior: none;
+  }
+  html {
+    overscroll-behavior: none;
+    -webkit-overscroll-behavior: none;
   }
 }
 
@@ -151,4 +159,14 @@ code {
   opacity: 1;
   transform: translateY(0px);
   filter: blur(0px);
+}
+
+/* Hide scrollbars while maintaining scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
 }
