@@ -10,8 +10,8 @@ echo "  - Port: $PORT"
 echo "  - LeetCode Site: ${LEETCODE_SITE:-global}"
 echo "  - Node Environment: ${NODE_ENV:-production}"
 
-# Create a proper MCP JSON-RPC over HTTPS server
-cat > /app/server/mcp-jsonrpc-server.js << 'EOF'
+# Create a proper MCP server with SSE transport
+cat > /app/server/mcp-sse-server.js << 'EOF'
 const express = require('express');
 const cors = require('cors');
 const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
@@ -248,31 +248,84 @@ app.get('/', (req, res) => {
   res.json({
     name: 'LeetCode MCP Server',
     version: '1.0.0',
-    description: 'LeetCode MCP Server with JSON-RPC over HTTPS',
+    description: 'LeetCode MCP Server with Server-Sent Events (SSE) transport',
     protocol: 'Model Context Protocol (MCP)',
-    transport: 'JSON-RPC over HTTPS',
+    transport: 'Server-Sent Events (SSE)',
     endpoints: {
-      mcp: '/mcp',
+      sse: '/sse',
       health: '/health'
     },
+    connection: {
+      url: 'https://cube-production-3225.up.railway.app/sse',
+      transport: 'sse',
+      format: 'MCP over SSE'
+    },
     usage: {
-      format: 'JSON-RPC 2.0',
-      content_type: 'application/json',
-      example: {
-        method: 'POST',
-        url: '/mcp',
-        body: {
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'tools/list'
-        }
-      }
+      format: 'Connect via MCP client using SSE transport',
+      example: 'mcp://https://cube-production-3225.up.railway.app/sse'
     }
   });
 });
 
-// Main MCP JSON-RPC endpoint
-app.post('/mcp', async (req, res) => {
+// Add GET handler for /mcp to show helpful message
+app.get('/mcp', (req, res) => {
+  res.json({
+    error: 'MCP endpoint moved',
+    message: 'This MCP server now uses Server-Sent Events (SSE) transport',
+    correct_endpoint: '/sse',
+    connection_url: 'https://cube-production-3225.up.railway.app/sse',
+    note: 'Use an MCP client that supports SSE transport'
+  });
+});
+
+// Store SSE connections
+const sseConnections = new Map();
+
+// SSE endpoint for MCP transport
+app.get('/sse', (req, res) => {
+  // Set SSE headers
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Cache-Control',
+  });
+
+  // Generate unique connection ID
+  const connectionId = Date.now() + Math.random();
+  
+  // Store connection
+  sseConnections.set(connectionId, res);
+
+  // Send initial connection message
+  res.write(`data: ${JSON.stringify({
+    jsonrpc: '2.0',
+    method: 'notifications/initialized',
+    params: {
+      protocolVersion: '2024-11-05',
+      serverInfo: {
+        name: 'leetcode-mcp-server',
+        version: '1.0.0'
+      },
+      capabilities: {
+        tools: {},
+        resources: {}
+      }
+    }
+  })}\\n\\n`);
+
+  // Handle client disconnect
+  req.on('close', () => {
+    sseConnections.delete(connectionId);
+    console.log(`SSE connection ${connectionId} closed`);
+  });
+
+  console.log(`SSE connection ${connectionId} established`);
+});
+
+// Handle MCP requests via POST to SSE endpoint
+app.post('/sse', async (req, res) => {
   try {
     const request = req.body;
     
@@ -283,16 +336,29 @@ app.post('/mcp', async (req, res) => {
         id: request.id || null,
         error: {
           code: -32600,
-          message: 'Invalid Request',
-          data: 'Missing required JSON-RPC 2.0 fields'
+          message: 'Invalid Request'
         }
       });
     }
 
     let response;
 
-    // Route to appropriate MCP method
+    // Handle MCP methods
     switch (request.method) {
+      case 'initialize':
+        response = {
+          protocolVersion: '2024-11-05',
+          capabilities: {
+            tools: {},
+            resources: {}
+          },
+          serverInfo: {
+            name: 'leetcode-mcp-server',
+            version: '1.0.0'
+          }
+        };
+        break;
+
       case 'tools/list':
         response = {
           tools: [
@@ -400,13 +466,12 @@ app.post('/mcp', async (req, res) => {
           id: request.id,
           error: {
             code: -32601,
-            message: 'Method not found',
-            data: `Unknown method: ${request.method}`
+            message: 'Method not found'
           }
         });
     }
 
-    // Return proper JSON-RPC response
+    // Return JSON-RPC response
     res.json({
       jsonrpc: '2.0',
       id: request.id,
@@ -414,7 +479,7 @@ app.post('/mcp', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('MCP Handler Error:', error);
+    console.error('MCP SSE Handler Error:', error);
     res.status(500).json({
       jsonrpc: '2.0',
       id: req.body?.id || null,
@@ -428,14 +493,14 @@ app.post('/mcp', async (req, res) => {
 });
 
 app.listen(port, '0.0.0.0', () => {
-  console.log(`🎉 LeetCode MCP JSON-RPC Server listening on port ${port}`);
-  console.log(`📊 MCP Endpoint: https://0.0.0.0:${port}/mcp`);
-  console.log(`🔧 Protocol: JSON-RPC 2.0 over HTTPS`);
+  console.log(`🎉 LeetCode MCP SSE Server listening on port ${port}`);
+  console.log(`📊 SSE Endpoint: https://0.0.0.0:${port}/sse`);
+  console.log(`🔧 Protocol: MCP over Server-Sent Events (SSE)`);
 });
 EOF
 
 # WebSocket dependency already installed via package.json
 
-# Start the MCP JSON-RPC server from the server directory where node_modules is
-echo "🔧 Starting MCP JSON-RPC server..."
-cd /app/server && node mcp-jsonrpc-server.js
+# Start the MCP SSE server from the server directory where node_modules is
+echo "🔧 Starting MCP SSE server..."
+cd /app/server && node mcp-sse-server.js
