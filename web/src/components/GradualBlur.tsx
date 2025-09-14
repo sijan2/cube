@@ -37,7 +37,7 @@ const getGradientDirection = (position: string) =>
     right: 'to right'
   })[position] || 'to bottom';
 
-const useIntersectionObserver = (ref: React.RefObject<HTMLDivElement>, shouldObserve = false) => {
+const useIntersectionObserver = (ref: React.RefObject<HTMLDivElement | null>, shouldObserve = false) => {
   const [isVisible, setIsVisible] = useState(!shouldObserve);
 
   useEffect(() => {

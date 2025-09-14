@@ -4,6 +4,7 @@ import { TextHighlighter } from '../components/TextHighlighter'
 import GradualBlur from '../components/GradualBlur'
 import Typewriter from 'typewriter-effect'
 import StarBorder from '../components/StarBorder'
+import PixelTrail from '../components/fancy/background/pixel-trail'
 
 function App() {
   const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set())
@@ -43,6 +44,13 @@ function App() {
   return (
     <div className="min-h-screen bg-white relative">
       <div className="relative flex flex-col min-h-screen">
+        {/* PixelTrail background overlay */}
+        <PixelTrail
+          pixelSize={20}
+          fadeDuration={600}
+          className="pointer-events-none"
+          pixelClassName="bg-orange-500/20"
+        />
         <header className="relative z-10">
           <nav className="w-full bg-gradient-to-b from-[#FF6B00]/40 to-white">
             <div className="flex items-center justify-between p-8 max-w-7xl mx-auto">
