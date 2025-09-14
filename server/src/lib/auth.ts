@@ -30,6 +30,10 @@ export const auth = betterAuth({
   trustedOrigins: [
     env.FRONTEND_URL,
     env.BACKEND_URL,
+    // Cloudflare Pages domains
+    'https://abe52968.cube-web-dq8.pages.dev',
+    'https://cube-web-dq8.pages.dev',
+    'https://cube-web.pages.dev',
     // Development origins
     ...(env.NODE_ENV === 'development' 
       ? ['http://localhost:3000', 'http://localhost:3002', 'http://127.0.0.1:3000', 'http://127.0.0.1:3002']
