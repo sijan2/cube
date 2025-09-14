@@ -3,3 +3,4 @@ uvicorn>=0.35.0
 requests>=2.31.0
 neo4j>=5.28.0
 openai>=1.99.0
+python-dotenv>=1.1.0

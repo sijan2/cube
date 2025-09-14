@@ -8,6 +8,13 @@ from typing import Optional, Dict, List, Any
 from fastmcp import FastMCP
 from neo4j import GraphDatabase
 import openai
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+# Also try loading from server/.env if it exists
+if os.path.exists("server/.env"):
+    load_dotenv("server/.env")
 
 mcp = FastMCP("LeetCode + Zep MCP Server")
 
