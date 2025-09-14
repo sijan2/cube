@@ -1,6 +1,5 @@
+import React from 'react'
 import { Outlet, createRootRoute } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanstackDevtools } from '@tanstack/react-devtools'
 import { ThemeProvider } from '@/providers/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
 
@@ -14,17 +13,47 @@ export const Route = createRootRoute({
     >
       <Outlet />
       <Toaster />
-      <TanstackDevtools
-        config={{
-          position: 'bottom-left',
-        }}
-        plugins={[
-          {
-            name: 'Tanstack Router',
-            render: <TanStackRouterDevtoolsPanel />,
-          },
-        ]}
-      />
+      {import.meta.env.DEV && <DevtoolsLazyLoader />}
     </ThemeProvider>
   ),
 })
+
+// Lazy load devtools component only in development
+function DevtoolsLazyLoader() {
+  const [devtoolsComponents, setDevtoolsComponents] = React.useState<{
+    TanstackDevtools: any;
+    TanStackRouterDevtoolsPanel: any;
+  } | null>(null);
+
+  React.useEffect(() => {
+    if (import.meta.env.DEV) {
+      Promise.all([
+        import('@tanstack/react-devtools'),
+        import('@tanstack/react-router-devtools')
+      ]).then(([devtools, routerDevtools]) => {
+        setDevtoolsComponents({
+          TanstackDevtools: devtools.TanstackDevtools,
+          TanStackRouterDevtoolsPanel: routerDevtools.TanStackRouterDevtoolsPanel,
+        });
+      });
+    }
+  }, []);
+
+  if (!devtoolsComponents) return null;
+
+  const { TanstackDevtools, TanStackRouterDevtoolsPanel } = devtoolsComponents;
+
+  return (
+    <TanstackDevtools
+      config={{
+        position: 'bottom-left',
+      }}
+      plugins={[
+        {
+          name: 'Tanstack Router',
+          render: <TanStackRouterDevtoolsPanel />,
+        },
+      ]}
+    />
+  );
+}

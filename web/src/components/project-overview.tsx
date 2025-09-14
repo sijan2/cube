@@ -21,6 +21,7 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent,
 } from "@/components/ui/sidebar";
+import { SidebarCard } from "@/components/ui/sidebar-card";
 
 export function ProjectOverview() {
   const [expanded, setExpanded] = useState(false);
@@ -41,9 +42,9 @@ export function ProjectOverview() {
   ];
 
   return (
-    <SidebarGroup className="px-1 pt-4 pb-2">
-      <SidebarGroupLabel className="flex items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2 uppercase text-muted-foreground/65">
+    <SidebarGroup className="px-2 pt-3 pb-2">
+      <SidebarGroupLabel className="flex items-center justify-between gap-2 mb-3 uppercase text-muted-foreground/70 tracking-wider">
+        <div className="flex items-center gap-2">
           <div className="relative">
             <Brain className="w-4 h-4" />
             <Sparkles className="w-2 h-2 absolute -top-1 -right-1 text-yellow-500" />
@@ -52,7 +53,8 @@ export function ProjectOverview() {
         </div>
         <button
           onClick={() => setExpanded(!expanded)}
-          className="text-muted-foreground/50 hover:text-muted-foreground transition-all"
+          aria-expanded={expanded}
+          className="text-muted-foreground/60 hover:text-foreground/80 transition-all"
         >
           <ChevronRight
             size={14}
@@ -64,34 +66,35 @@ export function ProjectOverview() {
       <SidebarGroupContent>
         <div className="space-y-3">
           {/* Project Tagline */}
-          <div className="p-2 rounded-lg bg-muted/10 border border-foreground/5">
+          <SidebarCard className="p-2">
             <p className="text-[11px] text-muted-foreground text-center italic">
               "Your personal AI that actually knows you"
             </p>
-          </div>
+          </SidebarCard>
 
           {/* Integrations Grid - Show when expanded */}
           {expanded && (
             <div className="space-y-2">
-              <div className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">
+              <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
                 Active Integrations ({integrations.length})
               </div>
               <div className="grid grid-cols-2 gap-1.5">
                 {integrations.map((integration, index) => (
-                  <div
+                  <SidebarCard
                     key={index}
-                    className="flex items-center gap-1.5 p-1.5 rounded bg-muted/10 hover:bg-muted/20 transition-all relative overflow-hidden"
+                    className="flex items-center gap-1.5 p-1.5 relative"
+                    interactive
                   >
                     {/* Small color indicator dot */}
                     <div className={`w-1.5 h-1.5 rounded-full ${integration.color.replace('text-', 'bg-')}`}></div>
-                    <div className={`${integration.color} opacity-80`}>{integration.icon}</div>
+                    <div className={`text-muted-foreground/70`}>{integration.icon}</div>
                     <span className="text-[10px] text-muted-foreground truncate">{integration.name}</span>
-                  </div>
+                  </SidebarCard>
                 ))}
               </div>
 
               {/* Integration status summary */}
-              <div className="pt-1 border-t border-muted/20">
+              <div className="pt-1 border-t border-border/70">
                 <div className="text-[9px] text-muted-foreground/60 text-center">
                   All services connected • Real-time sync enabled
                 </div>

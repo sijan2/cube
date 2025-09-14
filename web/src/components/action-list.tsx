@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { RiCheckboxCircleFill, RiCheckboxBlankCircleLine } from "@remixicon/react";
-import { CheckCircle2, Circle, MessageSquare, Sparkles } from "lucide-react";
+import { CheckCircle2, Circle, MessageSquare } from "lucide-react";
 import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
 } from "@/components/ui/sidebar";
+import { SidebarCard } from "@/components/ui/sidebar-card";
+import { TagChip } from "@/components/ui/tag-chip";
 
 interface ActionItem {
   id: number;
@@ -56,9 +57,10 @@ export function ActionList() {
       <SidebarGroupContent>
         <div className="space-y-2">
           {items.map((item) => (
-            <div
+            <SidebarCard
               key={item.id}
-              className="group relative p-2.5 rounded-lg bg-muted/20 hover:bg-muted/30 transition-all border border-transparent hover:border-foreground/5 overflow-hidden"
+              className="group relative p-2.5 overflow-hidden"
+              interactive
             >
               {/* Color gradient strip on left */}
               <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${item.color || 'from-gray-500/30 to-gray-600/30'}`} />
@@ -95,9 +97,7 @@ export function ActionList() {
                         {item.content}
                       </span>
                       {item.category && (
-                        <span className="inline-block mt-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-muted text-muted-foreground">
-                          {item.category}
-                        </span>
+                        <TagChip className="mt-1">{item.category}</TagChip>
                       )}
                     </div>
 
@@ -113,7 +113,7 @@ export function ActionList() {
                   </div>
                 </div>
               </div>
-            </div>
+            </SidebarCard>
           ))}
         </div>
       </SidebarGroupContent>

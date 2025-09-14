@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { SendHorizontal, Mic, MicOff, Volume2, VolumeX, AlertCircle, CheckCircle, X, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react";
+import { SendHorizontal, Mic, MicOff, Volume2, VolumeX, CheckCircle, MessageSquare, ChevronRight, Move, Minus, GripVertical } from "lucide-react";
 import { MessageContent } from "./message-content";
-import { AIThinking, MessageAvatar, MessageActions } from "./ai-chat-components";
+import { MessageAvatar, MessageActions } from "./ai-chat-components";
 import { MCPWorkflowThinking } from "./mcp-workflow-thinking";
 import { cn } from "@/lib/utils";
 
@@ -28,15 +28,15 @@ export function RightPanelChat({
   };
 
   const [value, setValue] = useState("");
-  const [isFocused, setIsFocused] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isFloating, setIsFloating] = useState(false);
+  const [panelWidth, setPanelWidth] = useState<number>(384); // px
+  const [panelHeight, setPanelHeight] = useState<number>(600); // px (floating)
+  const [pos, setPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
-  const [pollingStartTime, setPollingStartTime] = useState<number | null>(null);
-  const [isActivelyPolling, setIsActivelyPolling] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -59,6 +59,8 @@ export function RightPanelChat({
   // Initialize speech recognition and synthesis
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      // Initialize floating defaults near the right edge
+      setPos({ x: Math.max(16, window.innerWidth - panelWidth - 24), y: 24 });
       // Initialize Speech Recognition
       if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -89,6 +91,74 @@ export function RightPanelChat({
       }
     }
   }, []);
+
+  // Utilities
+  const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+  // Docked width resize (left edge)
+  const handleDockedResizeStart = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isFloating) return;
+    const startX = e.clientX;
+    const startWidth = panelWidth;
+    const onMove = (ev: PointerEvent) => {
+      const delta = startX - ev.clientX; // dragging left increases width
+      const next = clamp(startWidth + delta, 320, 720);
+      setPanelWidth(next);
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp, { once: true });
+  };
+
+  // Floating drag (header)
+  const handleFloatingDragStart = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isFloating) return;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startPos = { ...pos };
+    const onMove = (ev: PointerEvent) => {
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      const maxX = (typeof window !== 'undefined' ? window.innerWidth : 0) - panelWidth - 8;
+      const maxY = (typeof window !== 'undefined' ? window.innerHeight : 0) - panelHeight - 8;
+      setPos({
+        x: clamp(startPos.x + dx, 8, Math.max(8, maxX)),
+        y: clamp(startPos.y + dy, 8, Math.max(8, maxY)),
+      });
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp, { once: true });
+  };
+
+  // Floating resize (bottom-right corner)
+  const handleFloatingResizeStart = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isFloating) return;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startW = panelWidth;
+    const startH = panelHeight;
+    const onMove = (ev: PointerEvent) => {
+      const nextW = clamp(startW + (ev.clientX - startX), 320, Math.min(900, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 16));
+      const nextH = clamp(startH + (ev.clientY - startY), 280, Math.min(900, (typeof window !== 'undefined' ? window.innerHeight : 900) - 16));
+      setPanelWidth(nextW);
+      setPanelHeight(nextH);
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp, { once: true });
+  };
+
+  // Removed bubble drag; bottom pill is fixed in bottom-right
 
   const startListening = () => {
     if (recognition && !isListening) {
@@ -152,7 +222,6 @@ export function RightPanelChat({
         setIsProcessing(false);
       } else {
         console.log("Webhook submitted successfully, waiting for SSE response");
-        setPollingStartTime(Date.now());
         setSuccessMessage("Message sent successfully. Waiting for response...");
         setTimeout(() => setSuccessMessage(null), 3000);
 
@@ -235,6 +304,47 @@ export function RightPanelChat({
     };
   }, []);
 
+  // Close on outside click, except when clicking calendar events
+  useEffect(() => {
+    if (!isExpanded) return;
+    const handlePointerDown = (e: MouseEvent) => {
+      const panel = document.getElementById('right-panel-chat-container');
+      if (!panel) return;
+      const target = e.target as HTMLElement | null;
+      const clickedInside = panel.contains(target);
+      const clickedCalendarEvent = target?.closest('[data-calendar-event="true"]');
+      if (!clickedInside && !clickedCalendarEvent) {
+        setIsExpanded(false);
+      }
+    };
+    window.addEventListener('pointerdown', handlePointerDown);
+    return () => window.removeEventListener('pointerdown', handlePointerDown);
+  }, [isExpanded]);
+
+  // Global toggle/open events for floating chat
+  useEffect(() => {
+    const handleToggleFloating = () => {
+      setIsFloating(true);
+      setIsExpanded((prev) => !prev);
+    };
+    const handleOpenFloating = () => {
+      setIsFloating(true);
+      setIsExpanded(true);
+    };
+    const handleOpenDocked = () => {
+      setIsFloating(false);
+      setIsExpanded(true);
+    };
+    window.addEventListener('right-panel-chat:toggle-floating', handleToggleFloating as EventListener);
+    window.addEventListener('right-panel-chat:open-floating', handleOpenFloating as EventListener);
+    window.addEventListener('right-panel-chat:open-docked', handleOpenDocked as EventListener);
+    return () => {
+      window.removeEventListener('right-panel-chat:toggle-floating', handleToggleFloating as EventListener);
+      window.removeEventListener('right-panel-chat:open-floating', handleOpenFloating as EventListener);
+      window.removeEventListener('right-panel-chat:open-docked', handleOpenDocked as EventListener);
+    };
+  }, [isExpanded]);
+
   // Auto-scroll chat history
   useEffect(() => {
     const scroller = historyRef.current;
@@ -254,63 +364,111 @@ export function RightPanelChat({
   };
 
   return (
-    <div className="fixed right-0 top-0 bottom-0 z-50 flex">
-      {/* Collapsed Tab */}
-      <AnimatePresence>
-        {!isExpanded && (
-          <motion.button
-            initial={{ x: 100 }}
-            animate={{ x: 0 }}
-            exit={{ x: 100 }}
-            onClick={() => setIsExpanded(true)}
-            className="flex items-center justify-center w-12 h-32 bg-zinc-900 border-l border-zinc-800 rounded-l-lg self-center shadow-lg hover:bg-zinc-800 transition-colors group"
-          >
-            <div className="flex flex-col items-center gap-2">
-              <MessageSquare size={16} className="text-zinc-400 group-hover:text-zinc-200" />
-              <div className="text-xs text-zinc-400 group-hover:text-zinc-200 [writing-mode:vertical-lr] rotate-180">
-                Chat
-              </div>
-            </div>
-          </motion.button>
-        )}
-      </AnimatePresence>
+    <div className={cn("fixed inset-0 pointer-events-none z-50", className)}>
+      {/* Removed mid-right collapsed tab to keep only one bottom entry point */}
+
+      {/* Minimized floating bubble */}
+      {!isExpanded && (
+        <div
+          className="pointer-events-auto fixed right-4 bottom-4 flex items-center gap-2 px-3 h-10 rounded-full bg-background/95 border border-border shadow-xl cursor-pointer hover:bg-muted/95 transition-colors"
+          onClick={() => { setIsExpanded(true); setIsFloating(false); }}
+          aria-label="Open chat"
+        >
+          <MessageSquare size={16} className="text-muted-foreground" />
+          <span className="text-xs text-foreground">Open Chat</span>
+        </div>
+      )}
 
       {/* Expanded Panel */}
       <AnimatePresence>
         {isExpanded && (
           <motion.div
-            initial={{ x: "100%" }}
+            initial={{ x: isFloating ? 0 : 100 }}
             animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="w-96 h-full bg-zinc-900 border-l border-zinc-800 flex flex-col shadow-2xl"
+            exit={{ x: isFloating ? 0 : 100 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className={cn(
+              "pointer-events-auto flex flex-col shadow-2xl",
+              isFloating
+                ? "fixed border border-border bg-background rounded-lg"
+                : "fixed right-0 top-0 bottom-0 bg-background border-l border-border rounded-l-lg"
+            )}
+            style={
+              isFloating
+                ? { left: pos.x, top: pos.y, width: panelWidth, height: panelHeight }
+                : { width: panelWidth }
+            }
+            id="right-panel-chat-container"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-              <div className="flex items-center gap-3">
+            {/* Docked left-edge resizer */}
+            {!isFloating && (
+              <div
+                onPointerDown={handleDockedResizeStart}
+                className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize opacity-50 hover:opacity-100"
+              />
+            )}
+
+            {/* Header (drag handle in floating mode) */}
+            <div
+              className={cn(
+                "flex items-center justify-between p-3 border-b border-border select-none",
+                isFloating ? "cursor-move" : ""
+              )}
+              onPointerDown={handleFloatingDragStart}
+            >
+              <div className="flex items-center gap-2">
+                {isFloating && <GripVertical size={14} className="text-muted-foreground" />}
                 <div className="relative">
                   <div className="w-2 h-2 rounded-full bg-green-500"></div>
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-ping absolute top-0"></div>
                 </div>
-                <span className="text-sm font-medium text-zinc-100">mcp² Assistant</span>
+                <span className="text-sm font-medium text-foreground">mcp² Assistant</span>
               </div>
-              <button
-                onClick={() => setIsExpanded(false)}
-                className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
-              >
-                <ChevronRight size={16} />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => {
+                    if (!isFloating) {
+                      setIsFloating(true);
+                      setIsExpanded(true);
+                    } else {
+                      setIsFloating(false);
+                    }
+                  }}
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label={isFloating ? "Dock" : "Undock / Float"}
+                >
+                  <Move size={16} />
+                </button>
+                <button
+                  onClick={() => {
+                    // Minimize to bottom pill and docked mode
+                    setIsFloating(false);
+                    setIsExpanded(false);
+                  }}
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label="Minimize"
+                >
+                  <Minus size={16} />
+                </button>
+                <button
+                  onClick={() => setIsExpanded(false)}
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label="Close"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
 
             {/* Chat History */}
-            <div className="flex-1 flex flex-col min-h-0">
+            <div className="flex-1 flex flex-col min-h-0 rounded-b-lg">
               <div
                 ref={historyRef}
                 className="flex-1 overflow-y-auto px-4 py-4 scrollbar-hide"
               >
                 {messages.length === 0 && (
                   <div className="flex items-center justify-center h-32 text-center">
-                    <p className="text-sm text-zinc-400">
+                    <p className="text-sm text-muted-foreground">
                       Start a conversation with your<br />personal AI assistant
                     </p>
                   </div>
@@ -330,8 +488,8 @@ export function RightPanelChat({
                         className={cn(
                           "rounded-lg px-3 py-2",
                           m.role === "user"
-                            ? "bg-blue-600 text-white"
-                            : "bg-zinc-800 border border-zinc-700 text-zinc-100"
+                            ? "bg-foreground text-background"
+                            : "bg-muted border border-border text-foreground"
                         )}
                       >
                         <MessageContent
@@ -340,8 +498,8 @@ export function RightPanelChat({
                           className={cn(
                             "text-sm",
                             m.role === "user"
-                              ? "!text-white prose-headings:!text-white prose-p:!text-white prose-strong:!text-white"
-                              : "!text-zinc-100 prose-headings:!text-zinc-100 prose-p:!text-zinc-100"
+                              ? "!text-background prose-headings:!text-background prose-p:!text-background prose-strong:!text-background"
+                              : "!text-foreground prose-headings:!text-foreground prose-p:!text-foreground"
                           )}
                         />
                       </div>
@@ -373,7 +531,7 @@ export function RightPanelChat({
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="px-4 py-2 border-t border-zinc-800"
+                    className="px-4 py-2 border-t border-border"
                   >
                     <div className="flex items-center gap-2 text-xs text-green-400">
                       <CheckCircle size={14} />
@@ -384,7 +542,7 @@ export function RightPanelChat({
               </AnimatePresence>
 
               {/* Input Area */}
-              <div className="border-t border-zinc-800 p-4">
+              <div className="border-t border-border p-4">
                 <div className="flex items-end gap-2">
                   <div className="flex-1 relative">
                     <textarea
@@ -392,14 +550,12 @@ export function RightPanelChat({
                       value={value}
                       onChange={(e) => setValue(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      onFocus={() => setIsFocused(true)}
-                      onBlur={() => setIsFocused(false)}
                       placeholder={placeholder}
                       rows={1}
                       className={cn(
-                        "w-full resize-none border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100",
-                        "rounded-lg placeholder:text-zinc-400",
-                        "focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
+                        "w-full resize-none border border-border bg-muted px-3 py-2 text-sm text-foreground",
+                        "rounded-lg placeholder:text-muted-foreground",
+                        "focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring",
                       )}
                     />
                   </div>
@@ -412,8 +568,8 @@ export function RightPanelChat({
                       className={cn(
                         "flex size-8 items-center justify-center rounded-lg transition-colors",
                         isSpeaking
-                          ? "bg-red-600 text-white"
-                          : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700"
+                          ? "bg-destructive text-destructive-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
                       )}
                     >
                       {isSpeaking ? <VolumeX size={16} /> : <Volume2 size={16} />}
@@ -425,8 +581,8 @@ export function RightPanelChat({
                       className={cn(
                         "flex size-8 items-center justify-center rounded-lg transition-colors",
                         isListening
-                          ? "bg-blue-600 text-white animate-pulse"
-                          : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700"
+                          ? "bg-foreground text-background animate-pulse"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
                       )}
                     >
                       {isListening ? <MicOff size={16} /> : <Mic size={16} />}
@@ -437,9 +593,9 @@ export function RightPanelChat({
                       onClick={handleSend}
                       disabled={!value.trim() || isProcessing}
                       className={cn(
-                        "flex size-8 items-center justify-center rounded-lg bg-blue-600 text-white",
+                        "flex size-8 items-center justify-center rounded-lg bg-foreground text-background",
                         "transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                        "hover:bg-blue-500 active:scale-95"
+                        "hover:bg-foreground/90 active:scale-95"
                       )}
                     >
                       <SendHorizontal size={16} />
@@ -448,6 +604,14 @@ export function RightPanelChat({
                 </div>
               </div>
             </div>
+
+            {/* Floating bottom-right resizer */}
+            {isFloating && (
+              <div
+                onPointerDown={handleFloatingResizeStart}
+                className="absolute right-0 bottom-0 w-3 h-3 cursor-nwse-resize"
+              />
+            )}
           </motion.div>
         )}
       </AnimatePresence>

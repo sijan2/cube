@@ -43,7 +43,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
-import ThemeToggle from "@/components/theme-toggle";
+import { MessageSquare } from "lucide-react";
 import Participants from "@/components/participants";
 
 export interface EventCalendarProps {
@@ -384,7 +384,6 @@ export function EventCalendar({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <ThemeToggle />
             </div>
           </div>
         </div>

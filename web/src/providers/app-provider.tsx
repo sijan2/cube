@@ -1,12 +1,28 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { trpc, trpcClient } from '../lib/trpc';
 import { AuthProvider } from './auth-provider';
 import { CalendarProvider } from '../components/event-calendar/calendar-context';
 
 interface AppProviderProps {
   children: React.ReactNode;
+}
+
+// Lazy load React Query devtools only in development
+function ReactQueryDevtoolsLazyLoader() {
+  const [ReactQueryDevtools, setReactQueryDevtools] = useState<any>(null);
+
+  React.useEffect(() => {
+    if (import.meta.env.DEV) {
+      import('@tanstack/react-query-devtools').then((mod) => {
+        setReactQueryDevtools(() => mod.ReactQueryDevtools);
+      });
+    }
+  }, []);
+
+  if (!ReactQueryDevtools) return null;
+
+  return <ReactQueryDevtools initialIsOpen={false} />;
 }
 
 export function AppProvider({ children }: AppProviderProps) {
@@ -25,7 +41,7 @@ export function AppProvider({ children }: AppProviderProps) {
         <AuthProvider>
           <CalendarProvider>
             {children}
-            <ReactQueryDevtools initialIsOpen={false} />
+            {import.meta.env.DEV && <ReactQueryDevtoolsLazyLoader />}
           </CalendarProvider>
         </AuthProvider>
       </trpc.Provider>

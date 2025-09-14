@@ -9,17 +9,14 @@ import {
   Plane,
   Clock,
   AlertCircle,
-  Target,
-  Calendar,
-  Users,
-  BookOpen,
-  ChevronRight
 } from "lucide-react";
 import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
 } from "@/components/ui/sidebar";
+import { SidebarCard } from "@/components/ui/sidebar-card";
+import { TagChip } from "@/components/ui/tag-chip";
 
 interface Task {
   id: number;
@@ -119,23 +116,23 @@ export function DailyBriefing() {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "critical":
-        return "bg-muted/50 border-foreground/20 hover:bg-muted/70";
+        return "bg-muted/40 border-border/70 hover:bg-muted/60";
       case "high":
-        return "bg-muted/30 border-foreground/15 hover:bg-muted/50";
+        return "bg-muted/30 border-border/70 hover:bg-muted/50";
       case "medium":
-        return "bg-muted/20 border-foreground/10 hover:bg-muted/40";
+        return "bg-muted/20 border-border/70 hover:bg-muted/40";
       default:
-        return "bg-muted/10 border-foreground/5";
+        return "bg-muted/20 border-border/70";
     }
   };
 
-  const getNudgeStyles = (type: string) => {
-    return "bg-muted/40 border-foreground/10";
+  const getNudgeStyles = (_type: string) => {
+    return "bg-muted/30 border-border/70";
   };
 
   return (
-    <SidebarGroup className="px-1 pt-2">
-      <SidebarGroupLabel className="uppercase text-muted-foreground/65 flex items-center gap-2 mb-2">
+    <SidebarGroup className="px-2 pt-3">
+      <SidebarGroupLabel className="uppercase text-muted-foreground/70 tracking-wider flex items-center gap-2 mb-2">
         <RiSparkling2Line size={14} />
         <span>Top Priorities</span>
       </SidebarGroupLabel>
@@ -155,18 +152,18 @@ export function DailyBriefing() {
           ) : briefing ? (
             <div className="space-y-3">
               {briefing.nudge && isNudgeVisible && (
-                <div className={`flex items-start gap-3 p-3 rounded-lg border transition-all hover:shadow-sm ${getNudgeStyles(briefing.nudge.type)}`}>
+                <div className={`flex items-start gap-3 p-3 rounded-md border transition-colors ${getNudgeStyles(briefing.nudge.type)}`}>
                   <div className="flex-shrink-0 mt-0.5">
                     {briefing.nudge.icon}
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium leading-snug">
+                    <p className="text-sm font-medium leading-snug text-foreground">
                       {briefing.nudge.message}
                     </p>
                   </div>
                   <button
                     onClick={() => setIsNudgeVisible(false)}
-                    className="flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+                    className="flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity text-muted-foreground"
                   >
                     <RiCloseLine size={16} />
                   </button>
@@ -174,23 +171,24 @@ export function DailyBriefing() {
               )}
 
               <div className="space-y-2">
-                {briefing.tasks.map((task, index) => (
-                  <div
+                {briefing.tasks.map((task) => (
+                  <SidebarCard
                     key={task.id}
-                    className={`group relative p-3 rounded-lg border transition-all cursor-pointer overflow-hidden ${getPriorityColor(task.priority)}`}
+                    className={`group relative p-3 transition-colors overflow-hidden ${getPriorityColor(task.priority)}`}
+                    interactive
                   >
                     {/* Color gradient strip on left */}
                     <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${task.color || 'from-gray-500/20 to-gray-600/20'}`} />
 
                     <div className="flex items-start gap-3 pl-2">
-                      <div className="flex-shrink-0 mt-0.5 text-muted-foreground/70">
+                      <div className="flex-shrink-0 mt-0.5 text-muted-foreground">
                         {task.icon}
                       </div>
 
                       <div className="flex-1 space-y-2">
                         <div className="flex items-start justify-between">
                           <div>
-                            <h4 className="font-medium text-sm text-foreground/90">
+                            <h4 className="font-medium text-sm text-foreground">
                               {task.title}
                             </h4>
                             <p className="text-xs text-muted-foreground mt-0.5">
@@ -203,11 +201,11 @@ export function DailyBriefing() {
                           <div className="space-y-1">
                             <div className="flex items-center justify-between text-xs">
                               <span className="text-muted-foreground">Progress</span>
-                              <span className="font-medium text-foreground/80">{task.progress}%</span>
+                              <span className="font-medium text-foreground">{task.progress}%</span>
                             </div>
                             <div className="h-1 bg-muted rounded-full overflow-hidden">
                               <div
-                                className="h-full bg-foreground/20 transition-all"
+                                className="h-full bg-foreground/30 transition-all"
                                 style={{ width: `${task.progress}%` }}
                               />
                             </div>
@@ -226,18 +224,15 @@ export function DailyBriefing() {
                         {task.tags && task.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {task.tags.map((tag, tagIndex) => (
-                              <span
-                                key={tagIndex}
-                                className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-muted text-muted-foreground"
-                              >
+                              <TagChip key={tagIndex} size="sm">
                                 {tag}
-                              </span>
+                              </TagChip>
                             ))}
                           </div>
                         )}
                       </div>
                     </div>
-                  </div>
+                  </SidebarCard>
                 ))}
               </div>
             </div>
