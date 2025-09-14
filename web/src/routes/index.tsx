@@ -70,7 +70,7 @@ function App() {
             </div>
             <div className="flex items-center gap-4">
               <Link to="/login" className="bg-gray-900/90 text-white px-4 py-2 rounded-lg hover:bg-gray-900 transition-all flex items-center gap-2 group">
-                Login / Signup <span className="transform transition-transform duration-200 group-hover:translate-x-1">→</span>
+                Login <span className="transform transition-transform duration-200 group-hover:translate-x-1">→</span>
               </Link>
             </div>
             </div>
@@ -116,8 +116,16 @@ function App() {
             </div>
             
             {/* Video/Image placeholder */}
-            <StarBorder color="#FF6B00" speed="8s" className="w-full max-w-[90rem] h-[36rem] mt-24">
-              <span className="text-gray-400 text-lg">main demo video</span>
+            <StarBorder color="#FF6B00" speed="8s" className="w-full max-w-[64rem] aspect-square mt-24 overflow-hidden">
+              <div className="w-full h-full">
+                <iframe
+                  src="https://www.loom.com/embed/b0996ec8eb99414a9c1e8743624770e9?sid=eaa07780-90e2-49fb-b54d-e8cacf2a7815"
+                  className="w-full h-full"
+                  frameBorder="0"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
             </StarBorder>
           </div>
         </section>

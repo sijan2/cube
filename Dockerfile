@@ -1,21 +1,32 @@
-FROM python:3.11-slim
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Copy lockfile and manifest first for better caching
+COPY server/package.json server/package-lock.json ./
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install ALL dependencies (includes devDependencies for TypeScript build)
+RUN npm ci
 
-# Copy source code
-COPY src/ ./src/
+# Copy source and tsconfig, then build
+COPY server/tsconfig.json ./tsconfig.json
+COPY server/src ./src
+RUN npm run build
 
-# Expose the port
-EXPOSE $PORT
+# --- Runtime image ---
+FROM node:20-alpine AS runner
 
-# Start the server
-CMD ["python", "src/server.py"]
+WORKDIR /app
+ENV NODE_ENV=production
+
+# Copy manifests and install only production dependencies
+COPY server/package.json server/package-lock.json ./
+RUN npm ci --omit=dev
+
+# Copy built application
+COPY --from=builder /app/dist ./dist
+
+# The app defaults to 3003 and respects PORT provided by Railway
+EXPOSE 3003
+
+CMD ["node", "dist/index.js"]

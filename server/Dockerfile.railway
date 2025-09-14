@@ -1,24 +1,32 @@
-FROM node:18-alpine
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm
+# Copy lockfile and manifest first for better caching
+COPY server/package.json server/package-lock.json ./
 
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
+# Install ALL dependencies (includes devDependencies for TypeScript build)
+RUN npm ci
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile --prod
+# Copy source and tsconfig, then build
+COPY server/tsconfig.json ./tsconfig.json
+COPY server/src ./src
+RUN npm run build
 
-# Copy source code
-COPY . .
+# --- Runtime image ---
+FROM node:20-alpine AS runner
 
-# Build the application
-RUN pnpm run build
+WORKDIR /app
+ENV NODE_ENV=production
 
-# Expose port (Railway will assign PORT env var)
-EXPOSE $PORT
+# Copy manifests and install only production dependencies
+COPY server/package.json server/package-lock.json ./
+RUN npm ci --omit=dev
 
-# Start the server with Railway's PORT
-CMD ["sh", "-c", "PORT=${PORT:-3002} node dist/index.js"]
+# Copy built application
+COPY --from=builder /app/dist ./dist
+
+# The app defaults to 3003 and respects PORT provided by Railway
+EXPOSE 3003
+
+CMD ["node", "dist/index.js"]
