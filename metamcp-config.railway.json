@@ -1,0 +1,39 @@
+{
+  "servers": {
+    "leetcode": {
+      "type": "STDIO",
+      "command": "node",
+      "args": ["server/dist/mcp-server.js"],
+      "env": {
+        "NODE_ENV": "production",
+        "LEETCODE_SITE": "${LEETCODE_SITE:-global}",
+        "LEETCODE_SESSION": "${LEETCODE_SESSION:-}"
+      }
+    }
+  },
+  "proxy": {
+    "host": "0.0.0.0",
+    "port": "${PORT:-8080}",
+    "cors": {
+      "enabled": true,
+      "origins": ["*"]
+    },
+    "auth": {
+      "enabled": false
+    }
+  },
+  "transport": {
+    "sse": {
+      "enabled": true,
+      "path": "/sse"
+    },
+    "streamable": {
+      "enabled": true,
+      "path": "/stream"
+    }
+  },
+  "healthCheck": {
+    "enabled": true,
+    "path": "/health"
+  }
+}

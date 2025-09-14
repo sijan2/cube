@@ -1,0 +1,45 @@
+# Railway ignore file - exclude unnecessary files from deployment
+
+# Local development files
+.env
+.env.local
+.env.example
+docker-compose.yml
+start-metamcp.sh
+
+# Development dependencies
+node_modules/.cache
+*.log
+*.pid
+.DS_Store
+
+# Documentation (keep README-metamcp.md but ignore others)
+README.md
+Readme.md
+
+# Local Docker files (we use Dockerfile.railway instead)
+Dockerfile
+server/Dockerfile
+
+# Database files
+*.sqlite
+*.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test files
+test/
+tests/
+__tests__/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+
+# Development scripts
+test-*.js
+test-*.ts

@@ -11,7 +11,9 @@
     "type-check": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "mcp:leetcode": "node dist/mcp-server.js",
+    "mcp:dev": "tsx src/mcp-server.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.18.0",

@@ -1,0 +1,41 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install system dependencies for running both MetaMCP and our server
+RUN apk add --no-cache python3 py3-pip curl wget
+
+# Install pnpm
+RUN npm install -g pnpm tsx
+
+# Copy package files for the server
+COPY server/package.json server/pnpm-lock.yaml ./server/
+COPY package.json ./
+
+# Install dependencies
+WORKDIR /app/server
+RUN pnpm install --frozen-lockfile
+
+# Copy server source code
+COPY server/ ./
+
+# Build the server
+RUN pnpm run build
+
+# Go back to app root
+WORKDIR /app
+
+# Copy MetaMCP configuration
+COPY metamcp-config.railway.json ./metamcp-config.json
+COPY start-railway.sh ./
+RUN chmod +x start-railway.sh
+
+# Download and setup MetaMCP (we'll run it alongside our server)
+RUN wget -O metamcp https://github.com/metatool-ai/metamcp/releases/latest/download/metamcp-linux-amd64 && \
+    chmod +x metamcp
+
+# Expose the MetaMCP port
+EXPOSE $PORT
+
+# Start both services
+CMD ["./start-railway.sh"]

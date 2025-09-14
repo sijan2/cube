@@ -12,6 +12,10 @@ import { LeetCode } from 'leetcode-query';
 import { z } from 'zod';
 import minimist from 'minimist';
 import pino from 'pino';
+import * as dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 // Logger that outputs to stderr to avoid interfering with MCP JSON-RPC on stdout
 const logger = pino(
@@ -21,9 +25,10 @@ const logger = pino(
 
 // Command line argument schema
 const ArgsSchema = z.object({
-  site: z.enum(['global', 'cn']).default('global'),
+  site: z.enum(['global', 'cn']).default((process.env.LEETCODE_SITE as 'global' | 'cn') || 'global'),
   session: z.string().optional(),
   help: z.boolean().default(false),
+  proxy: z.boolean().default(false),
 });
 
 // LeetCode service wrapper
@@ -130,6 +135,7 @@ Options:
     {
       name: 'leetcode-mcp-server',
       version: '1.0.0',
+      description: 'LeetCode MCP Server with MetaMCP proxy support',
     },
     {
       capabilities: {
@@ -139,7 +145,7 @@ Options:
     }
   );
 
-  const leetcodeService = new LeetCodeService(config.site, config.session);
+  const leetcodeService = new LeetCodeService(config.site, config.session || process.env.LEETCODE_SESSION);
 
   // Register tools
   server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -323,7 +329,7 @@ Options:
   await server.connect(transport);
 
   // Don't log to stdout as it interferes with MCP protocol
-  console.error('LeetCode MCP Server started successfully');
+  logger.info('LeetCode MCP Server started successfully and ready for MetaMCP proxy');
 }
 
 // Start server if this is the main module

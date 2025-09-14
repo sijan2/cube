@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  metamcp:
+    image: quay.io/metatool-ai/metamcp:latest
+    ports:
+      - "12008:12008"
+    environment:
+      - METAMCP_HOST=0.0.0.0
+      - METAMCP_PORT=12008
+    volumes:
+      - ./metamcp-config.json:/app/config.json
+      - ./server/src/mcp-server.ts:/app/mcp-server.ts
+    depends_on:
+      - cube-server
+    restart: unless-stopped
+
+  cube-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:password@db:5432/cube}
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=cube
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
