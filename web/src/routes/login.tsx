@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { LoginForm } from "@/components/login-form"
-import { Navbar } from "@/components/navbar"
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
@@ -9,10 +8,6 @@ export const Route = createFileRoute('/login')({
 function LoginPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <header className="relative z-10">
-        <Navbar />
-      </header>
-
       {/* Login Section */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-24">
         <div className="w-full max-w-md">
