@@ -60,7 +60,7 @@ const mockBriefing: Briefing = {
       icon: <Code2 className="w-4 h-4" />,
       deadline: "Sept 15",
       progress: 25,
-      tags: ["Development", "Team", "Deadline"],
+      tags: ["Development", "Team", "Linear MCP", "Deadline"],
       color: "from-blue-500/60 to-indigo-500/60"
     },
     {
@@ -70,7 +70,7 @@ const mockBriefing: Briefing = {
       priority: "medium",
       icon: <GraduationCap className="w-4 h-4" />,
       deadline: "This Week",
-      tags: ["CMSC 460", "CMSC 216", "BMGT 289D"],
+      tags: ["CMSC 460", "CMSC 216", "BMGT 289D", "Canvas MCP"],
       color: "from-green-500/60 to-emerald-500/60"
     },
   ],

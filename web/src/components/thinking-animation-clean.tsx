@@ -66,6 +66,7 @@ export function ThinkingAnimation({ isVisible, userQuery = "", className, pollin
   const [currentPhase, setCurrentPhase] = useState<Phase>("intro");
   const [tools, setTools] = useState<ToolCall[]>([]);
   const [dots, setDots] = useState("");
+  const [countdown, setCountdown] = useState(10);
 
   // Detect workflow type
   const workflowType = React.useMemo(() => {
@@ -98,21 +99,43 @@ export function ThinkingAnimation({ isVisible, userQuery = "", className, pollin
   useEffect(() => {
     if (!isVisible) {
       setCurrentPhase("intro");
+      setCountdown(10);
       return;
     }
 
     const phaseTimeline = [
       { phase: "intro" as const, delay: 0 },
-      { phase: "phase1" as const, delay: 8000 },   // 8 seconds for intro
-      { phase: "phase2" as const, delay: 20000 },  // 12 seconds for phase1
-      { phase: "phase3" as const, delay: 35000 },  // 15 seconds for phase2
+      { phase: "phase1" as const, delay: 10000 },  // 10 seconds for intro - mcp² Intelligence Gathering starts
+      { phase: "phase2" as const, delay: 22000 },  // 12 seconds for phase1
+      { phase: "phase3" as const, delay: 37000 },  // 15 seconds for phase2
     ];
 
     const timeouts = phaseTimeline.map(({ phase, delay }) =>
       setTimeout(() => setCurrentPhase(phase), delay)
     );
 
-    return () => timeouts.forEach(timeout => clearTimeout(timeout));
+    // Countdown timer for intro phase
+    const countdownInterval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    // Clear countdown after 10 seconds
+    const countdownTimeout = setTimeout(() => {
+      clearInterval(countdownInterval);
+      setCountdown(0);
+    }, 10000);
+
+    return () => {
+      timeouts.forEach(timeout => clearTimeout(timeout));
+      clearInterval(countdownInterval);
+      clearTimeout(countdownTimeout);
+    };
   }, [isVisible]);
 
   // Tool activation for each phase
@@ -139,8 +162,18 @@ export function ThinkingAnimation({ isVisible, userQuery = "", className, pollin
 
     const phaseTools = getToolsForPhase(currentPhase);
 
-    // Reset all tools to pending first
-    setTools(prev => prev.map(tool => ({ ...tool, status: "pending" as const })));
+    // Don't reset tools that are already completed from previous phases
+    // Only reset tools that haven't been activated yet
+    setTools(prev => prev.map(tool => {
+      // Keep completed status for tools that are already done
+      if (tool.status === "completed") return tool;
+      // Reset only pending or active tools that aren't in current phase
+      const isInCurrentPhase = phaseTools.some(pt => pt.id === tool.id);
+      if (!isInCurrentPhase && tool.status === "active") {
+        return { ...tool, status: "completed" as const };
+      }
+      return tool;
+    }));
 
     // Activate tools for current phase
     const activationTimeouts = phaseTools.map((tool, index) => {
@@ -175,7 +208,7 @@ export function ThinkingAnimation({ isVisible, userQuery = "", className, pollin
         return {
           icon: Brain,
           text: isInterview ? "🎯 Interview Ninja Mode Activated" : "📚 Study Plan Genius Activated",
-          subtitle: "Working with your personal AI assistant",
+          subtitle: "Initializing mcp² systems... Intelligence gathering starts in 10 seconds",
           color: "text-purple-600 dark:text-purple-400"
         };
       case "phase1":
@@ -211,7 +244,8 @@ export function ThinkingAnimation({ isVisible, userQuery = "", className, pollin
 
   const phaseInfo = getPhaseInfo();
   const PhaseIcon = phaseInfo.icon;
-  const activeTools = tools.filter(tool => tool.status !== "pending");
+  // Show all tools that are either active or completed (not just current phase)
+  const activeTools = tools.filter(tool => tool.status === "active" || tool.status === "completed");
 
   return (
     <AnimatePresence>
@@ -233,21 +267,54 @@ export function ThinkingAnimation({ isVisible, userQuery = "", className, pollin
             animate={{ rotate: 360 }}
             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
             className={cn(
-              "rounded-full p-2",
+              "rounded-full p-2 relative",
               phaseInfo.color.replace("text-", "bg-").replace("600", "100").replace("400", "900/20")
             )}
           >
             <PhaseIcon size={20} className={phaseInfo.color} />
+            {currentPhase === "intro" && countdown > 0 && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute -top-1 -right-1 bg-purple-600 dark:bg-purple-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center"
+              >
+                {countdown}
+              </motion.div>
+            )}
           </motion.div>
-          <div className="flex flex-col">
+          <div className="flex flex-col flex-1">
             <span className={cn("text-sm font-medium", phaseInfo.color)}>
               {phaseInfo.text}{dots}
             </span>
             <span className="text-xs text-zinc-500 dark:text-zinc-400">
-              {phaseInfo.subtitle}
+              {currentPhase === "intro" && countdown > 0
+                ? `Initializing mcp² systems... Intelligence gathering starts in ${countdown} seconds`
+                : phaseInfo.subtitle}
             </span>
           </div>
         </div>
+
+        {/* Countdown Progress Bar for Intro Phase */}
+        {currentPhase === "intro" && countdown > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: "100%" }}
+                animate={{ width: "0%" }}
+                transition={{ duration: 10, ease: "linear" }}
+                className="absolute left-0 top-0 h-full bg-gradient-to-r from-purple-500 to-purple-600"
+              />
+            </div>
+            <div className="mt-2 text-center text-xs text-purple-600 dark:text-purple-400 font-medium">
+              🚀 mcp² Intelligence Gathering initiating in {countdown}s...
+            </div>
+          </motion.div>
+        )}
 
         {/* Active Tools */}
         {activeTools.length > 0 && (

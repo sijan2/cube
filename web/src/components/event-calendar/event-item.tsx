@@ -11,7 +11,7 @@ import {
   type CalendarEvent,
 } from "@/components/event-calendar";
 import { cn } from "@/lib/utils";
-import { SparklesIcon, type SparklesIconHandle } from "@/components/SparklesIcon";
+import { Star } from "lucide-react";
 
 // Using date-fns format with custom formatting:
 // 'h' - hours (1-12)
@@ -104,6 +104,7 @@ interface EventItemProps {
   dndAttributes?: DraggableAttributes;
   onMouseDown?: (e: React.MouseEvent) => void;
   onTouchStart?: (e: React.TouchEvent) => void;
+  onStarClick?: (event: CalendarEvent) => void;
 }
 
 export function EventItem({
@@ -121,9 +122,21 @@ export function EventItem({
   dndAttributes,
   onMouseDown,
   onTouchStart,
+  onStarClick,
 }: EventItemProps) {
   const eventColor = event.color;
-  const sparklesRef = useRef<SparklesIconHandle | null>(null);
+
+  const handleStarClick = (e: React.MouseEvent) => {
+    console.log('⭐ Star button clicked in EventItem for:', event.title);
+    e.preventDefault();
+    e.stopPropagation();
+    if (onStarClick) {
+      console.log('📞 Calling onStarClick handler');
+      onStarClick(event);
+    } else {
+      console.warn('❌ No onStarClick handler provided');
+    }
+  };
 
   // Use the provided currentTime (for dragging) or the event's actual time
   const displayStart = useMemo(() => {
@@ -173,8 +186,6 @@ export function EventItem({
         dndAttributes={dndAttributes}
         onMouseDown={onMouseDown}
         onTouchStart={onTouchStart}
-        onMouseEnter={() => sparklesRef.current?.startAnimation()}
-        onMouseLeave={() => sparklesRef.current?.stopAnimation()}
       >
         {children || (
           <div className="flex w-full items-center justify-between gap-1">
@@ -186,11 +197,13 @@ export function EventItem({
               )}
               {event.title}
             </span>
-            <SparklesIcon
-              ref={sparklesRef}
-              className="shrink-0 opacity-0 group-hover:opacity-80 transition-opacity pointer-events-none"
-              size={12}
-            />
+            <button
+              onClick={handleStarClick}
+              className="shrink-0 opacity-0 group-hover:opacity-80 transition-opacity hover:opacity-100 hover:text-yellow-500 z-10"
+              aria-label="Add to chat context"
+            >
+              <Star size={12} />
+            </button>
           </div>
         )}
       </EventWrapper>
@@ -216,8 +229,6 @@ export function EventItem({
         dndAttributes={dndAttributes}
         onMouseDown={onMouseDown}
         onTouchStart={onTouchStart}
-        onMouseEnter={() => sparklesRef.current?.startAnimation()}
-        onMouseLeave={() => sparklesRef.current?.stopAnimation()}
       >
         {durationMinutes < 45 ? (
           <div className="flex w-full items-center justify-between gap-1">
@@ -229,21 +240,25 @@ export function EventItem({
                 </span>
               )}
             </div>
-            <SparklesIcon
-              ref={sparklesRef}
-              className="shrink-0 opacity-0 group-hover:opacity-80 transition-opacity pointer-events-none"
-              size={12}
-            />
+            <button
+              onClick={handleStarClick}
+              className="shrink-0 opacity-0 group-hover:opacity-80 transition-opacity hover:opacity-100 hover:text-yellow-500 z-10"
+              aria-label="Add to chat context"
+            >
+              <Star size={12} />
+            </button>
           </div>
         ) : (
           <>
             <div className="flex w-full items-center justify-between gap-1">
               <div className="truncate font-medium">{event.title}</div>
-              <SparklesIcon
-                ref={sparklesRef}
-                className="shrink-0 opacity-0 group-hover:opacity-80 transition-opacity pointer-events-none"
-                size={12}
-              />
+              <button
+                onClick={handleStarClick}
+                className="shrink-0 opacity-0 group-hover:opacity-80 transition-opacity hover:opacity-100 hover:text-yellow-500 z-10"
+                aria-label="Add to chat context"
+              >
+                <Star size={12} />
+              </button>
             </div>
             {showTime && (
               <div className="truncate font-normal opacity-70 sm:text-xs uppercase">
@@ -268,19 +283,19 @@ export function EventItem({
       data-past-event={isPast(new Date(event.end)) || undefined}
       onClick={onClick}
       onMouseDown={onMouseDown}
-      onMouseEnter={() => sparklesRef.current?.startAnimation()}
-      onMouseLeave={() => sparklesRef.current?.stopAnimation()}
       onTouchStart={onTouchStart}
       {...dndListeners}
       {...dndAttributes}
     >
       <div className="flex w-full items-center justify-between">
         <div className="text-sm font-medium truncate">{event.title}</div>
-        <SparklesIcon
-          ref={sparklesRef}
-          className="shrink-0 opacity-0 group-hover:opacity-80 transition-opacity pointer-events-none"
-          size={14}
-        />
+        <button
+          onClick={handleStarClick}
+          className="shrink-0 opacity-0 group-hover:opacity-80 transition-opacity hover:opacity-100 hover:text-yellow-500 z-10"
+          aria-label="Add to chat context"
+        >
+          <Star size={14} />
+        </button>
       </div>
       <div className="text-xs opacity-70">
         {event.allDay ? (

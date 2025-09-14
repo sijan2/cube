@@ -39,6 +39,7 @@ interface MonthViewProps {
   events: CalendarEvent[];
   onEventSelect: (event: CalendarEvent) => void;
   onEventCreate: (startTime: Date) => void;
+  onStarClick?: (event: CalendarEvent) => void;
 }
 
 export function MonthView({
@@ -46,6 +47,7 @@ export function MonthView({
   events,
   onEventSelect,
   onEventCreate,
+  onStarClick,
 }: MonthViewProps) {
   const days = useMemo(() => {
     const monthStart = startOfMonth(currentDate);
@@ -179,6 +181,7 @@ export function MonthView({
                                 view="month"
                                 isFirstDay={isFirstDay}
                                 isLastDay={isLastDay}
+                                onStarClick={onStarClick}
                               >
                                 <div className="invisible" aria-hidden={true}>
                                   {!event.allDay && (
@@ -206,6 +209,7 @@ export function MonthView({
                               event={event}
                               view="month"
                               onClick={(e) => handleEventClick(event, e)}
+                              onStarClick={onStarClick}
                               isFirstDay={isFirstDay}
                               isLastDay={isLastDay}
                             />
@@ -256,6 +260,7 @@ export function MonthView({
                                       view="month"
                                       isFirstDay={isFirstDay}
                                       isLastDay={isLastDay}
+                                      onStarClick={onStarClick}
                                     />
                                   );
                                 })}
