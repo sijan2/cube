@@ -98,23 +98,23 @@ code {
 }
 
 .dark {
-  --background: oklch(0.256 0.006 286.033);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.256 0.006 286.033);
-  --popover-foreground: oklch(0.985 0 0);
+  --background: oklch(0 0 0); /* Pure black background */
+  --foreground: oklch(0.95 0 0); /* Slightly dimmed white for better eye comfort */
+  --card: oklch(0.05 0 0); /* Very dark gray for cards */
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.08 0 0); /* Slightly lighter than pure black for popovers */
+  --popover-foreground: oklch(0.95 0 0);
   --primary: oklch(0.92 0.004 286.32);
-  --primary-foreground: oklch(0.21 0.006 285.885);
-  --secondary: oklch(0.37 0.013 285.805);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.37 0.013 285.805);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.37 0.013 285.805);
-  --accent-foreground: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.05 0 0); /* Dark text on primary */
+  --secondary: oklch(0.15 0.013 285.805); /* Darker secondary */
+  --secondary-foreground: oklch(0.95 0 0);
+  --muted: oklch(0.12 0 0); /* Very dark muted background */
+  --muted-foreground: oklch(0.65 0.015 286.067); /* Slightly dimmed muted text */
+  --accent: oklch(0.15 0.013 285.805);
+  --accent-foreground: oklch(0.95 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(0.985 0 0 / 10%);
-  --input: oklch(0.985 0 0 / 15%);
+  --border: oklch(0.95 0 0 / 15%); /* Slightly more visible borders */
+  --input: oklch(0.95 0 0 / 20%); /* More visible input borders */
   --ring: oklch(0.552 0.016 285.938);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
@@ -169,4 +169,91 @@ code {
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Calendar Dark Mode - Full Black Theme */
+.dark [data-slot="month-view"],
+.dark [data-slot="week-view"],
+.dark [data-slot="day-view"],
+.dark [data-slot="agenda-view"] {
+  background-color: #000000 !important; /* Pure black background */
+}
+
+/* Calendar main container */
+.dark .bg-card,
+.dark .bg-background {
+  background-color: #000000 !important;
+}
+
+/* Calendar cells in dark mode */
+.dark .group[data-outside-cell] {
+  background-color: rgba(0, 0, 0, 0.8) !important; /* Darker for outside cells */
+}
+
+/* All calendar cells */
+.dark .border-border,
+.dark .border-border\/70 {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Calendar grid lines for better visibility in pure black */
+.dark .border {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Today's date highlight with better contrast */
+.dark .group-data-today\:bg-primary,
+.dark [data-today="true"] {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Event cards need slight elevation from pure black */
+.dark [data-calendar-event],
+.dark .event-card {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 1px 3px rgba(255, 255, 255, 0.05);
+}
+
+/* Hover states for better visibility */
+.dark button:hover,
+.dark .hover\:bg-muted\/50:hover,
+.dark .hover\:bg-muted:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Calendar header in pure black */
+.dark .flex.flex-col.rounded-lg,
+.dark .calendar-header {
+  background-color: #000000 !important;
+}
+
+/* Calendar text colors */
+.dark .text-foreground {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.dark .text-muted-foreground {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Calendar navigation buttons */
+.dark .calendar-nav button {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark .calendar-nav button:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Month/week view specific styling */
+.dark .calendar-day-cell {
+  background-color: #000000 !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.dark .calendar-day-cell:hover {
+  background-color: rgba(255, 255, 255, 0.03) !important;
 }
