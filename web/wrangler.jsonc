@@ -1,0 +1,26 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/wrangler/main/config-schema.json",
+  "name": "cube-web",
+  "compatibility_date": "2024-09-14",
+  
+  // Cloudflare Pages configuration
+  "pages": {
+    "project_name": "cube-web",
+    "build": {
+      "command": "pnpm build",
+      "directory": "dist"
+    },
+    "preview": {
+      "environment": {
+        "VITE_BACKEND_URL": "https://hackmit-production-f24d.up.railway.app",
+        "VITE_POKE_API_KEY": "pk_JyBX4ASkmst1CQR3F7am_2a7NJuQkb9nT4zjQDs46fc"
+      }
+    },
+    "production": {
+      "environment": {
+        "VITE_BACKEND_URL": "https://hackmit-production-f24d.up.railway.app",
+        "VITE_POKE_API_KEY": "pk_JyBX4ASkmst1CQR3F7am_2a7NJuQkb9nT4zjQDs46fc"
+      }
+    }
+  }
+}

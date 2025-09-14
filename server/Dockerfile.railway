@@ -1,32 +1,21 @@
-FROM node:20-alpine AS builder
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy lockfile and manifest first for better caching
-COPY server/package.json server/package-lock.json ./
+# Copy everything at once
+COPY . .
 
-# Install ALL dependencies (includes devDependencies for TypeScript build)
-RUN npm ci
+# Debug: List files to verify they're copied
+RUN ls -la && echo "---" && ls -la *.json *.yaml 2>/dev/null || true
 
-# Copy source and tsconfig, then build
-COPY server/tsconfig.json ./tsconfig.json
-COPY server/src ./src
+# Install dependencies using npm
+RUN npm install
+
+# Build the application
 RUN npm run build
 
-# --- Runtime image ---
-FROM node:20-alpine AS runner
+# Expose port (Railway will assign PORT env var)
+EXPOSE ${PORT:-3003}
 
-WORKDIR /app
-ENV NODE_ENV=production
-
-# Copy manifests and install only production dependencies
-COPY server/package.json server/package-lock.json ./
-RUN npm ci --omit=dev
-
-# Copy built application
-COPY --from=builder /app/dist ./dist
-
-# The app defaults to 3003 and respects PORT provided by Railway
-EXPOSE 3003
-
-CMD ["node", "dist/index.js"]
+# Start the server with Railway's PORT
+CMD ["sh", "-c", "PORT=${PORT:-3003} node dist/index.js"]
