@@ -4,8 +4,12 @@ import { RouterProvider, createRouter } from '@tanstack/react-router'
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
+import { AppProvider } from './providers/app-provider'
+import { ThemeProvider } from './providers/theme-provider'
 
 import '../globals.css'
+import './styles/animations.css'
+import './styles/fonts.css'
 import reportWebVitals from './reportWebVitals.ts'
 
 // Create a new router instance
@@ -31,7 +35,11 @@ if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
   root.render(
     <StrictMode>
-      <RouterProvider router={router} />
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <AppProvider>
+          <RouterProvider router={router} />
+        </AppProvider>
+      </ThemeProvider>
     </StrictMode>,
   )
 }

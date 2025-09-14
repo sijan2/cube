@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { addDays, setHours, setMinutes, getDay } from "date-fns";
 import { useCalendarContext } from "@/components/event-calendar/calendar-context";
 
@@ -9,6 +9,17 @@ import {
   type CalendarEvent,
   type EventColor,
 } from "@/components/event-calendar";
+
+// API event shape from server (typed, simplified)
+export interface ApiCalendarEvent {
+  id: string;
+  title?: string;
+  description?: string;
+  start: string; // ISO string
+  end: string;   // ISO string
+  allDay?: boolean;
+  location?: string;
+}
 
 // Etiquettes data for calendar filtering
 export const etiquettes = [
@@ -56,7 +67,7 @@ const currentDate = new Date();
 // Calculate the offset once to avoid repeated calculations
 const daysUntilNextSunday = getDaysUntilNextSunday(currentDate);
 
-// Sample events data with hardcoded times
+// Sample events data with hardcoded times (fallback if API fails)
 const sampleEvents: CalendarEvent[] = [
   {
     id: "w1-0a",
@@ -591,9 +602,28 @@ const sampleEvents: CalendarEvent[] = [
   },
 ];
 
-export default function Component() {
+export default function Component({ apiEvents }: { apiEvents?: ApiCalendarEvent[] }) {
   const [events, setEvents] = useState<CalendarEvent[]>(sampleEvents);
   const { isColorVisible } = useCalendarContext();
+
+  // Map API events (ISO strings) to CalendarEvent (Date objects)
+  useEffect(() => {
+    if (!apiEvents) return;
+    try {
+      const mapped: CalendarEvent[] = apiEvents.map((ev) => ({
+        id: ev.id,
+        title: ev.title ?? "Untitled",
+        description: ev.description,
+        start: new Date(ev.start),
+        end: new Date(ev.end),
+        allDay: ev.allDay,
+        // Optional mapping for color/label can be added later
+      }));
+      setEvents(mapped);
+    } catch (_e) {
+      // keep sample events on error
+    }
+  }, [apiEvents]);
 
   // Filter events based on visible colors
   const visibleEvents = useMemo(() => {

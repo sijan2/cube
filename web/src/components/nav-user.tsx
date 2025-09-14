@@ -19,6 +19,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useNavigate } from "@tanstack/react-router";
+import { signOut } from "@/lib/auth-client";
+import { useAuth } from "@/providers/auth-provider";
 
 export function NavUser({
   user,
@@ -29,6 +32,19 @@ export function NavUser({
     avatar: string;
   };
 }) {
+  const navigate = useNavigate();
+  const { refreshSession } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } finally {
+      // Navigate first to avoid dashboard guard redirecting to /login
+      navigate({ to: "/", replace: true });
+      // Refresh session in background
+      void refreshSession();
+    }
+  };
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -76,7 +92,7 @@ export function NavUser({
                 />
                 Upgrade
               </DropdownMenuItem>
-              <DropdownMenuItem className="gap-3 focus:bg-sidebar-accent">
+              <DropdownMenuItem onClick={handleLogout} className="gap-3 focus:bg-sidebar-accent">
                 <RiLogoutCircleLine
                   size={20}
                   className="size-5 text-muted-foreground/80"

@@ -1,0 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Poly:ital@0;1&display=swap');
+
+.poly-regular {
+  font-family: "Poly", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.poly-regular-italic {
+  font-family: "Poly", serif;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.gradient-top {
+  background: linear-gradient(180deg, rgba(255, 237, 229, 0.15) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+.dark .gradient-top {
+  background: linear-gradient(180deg, rgba(255, 120, 40, 0.02) 0%, rgba(255, 120, 40, 0) 100%);
+}
+
+.gradient-bottom {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(255, 237, 229, 0.15) 100%);
+}
+
+.dark .gradient-bottom {
+  background: linear-gradient(180deg, rgba(17, 24, 39, 1) 0%, rgba(255, 120, 40, 0.02) 100%);
+}
