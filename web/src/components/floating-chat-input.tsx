@@ -53,7 +53,6 @@ export function FloatingChatInput({
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
   const [pollingStartTime, setPollingStartTime] = useState<number | null>(null);
   const [isActivelyPolling, setIsActivelyPolling] = useState(false);
-  const [networkError, setNetworkError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -254,8 +253,7 @@ export function FloatingChatInput({
         setCurrentRequestId(null);
         setPollingStartTime(null);
         setIsActivelyPolling(false);
-        setNetworkError("Sorry, I'm having trouble connecting to my services right now. Please try again in a moment.");
-        setTimeout(() => setNetworkError(null), 5000);
+        // Network error occurred but not displaying to user
       } else {
         // Webhook submitted successfully, waiting for SSE response
         console.log("Webhook submitted successfully, waiting for SSE response");
@@ -284,8 +282,7 @@ export function FloatingChatInput({
       setCurrentRequestId(null);
       setPollingStartTime(null);
       setIsActivelyPolling(false);
-      setNetworkError("Network error - please check your connection and try again.");
-      setTimeout(() => setNetworkError(null), 5000);
+      // Network error occurred but not displaying to user
     }
 
     onSubmit?.(text);
@@ -372,8 +369,7 @@ export function FloatingChatInput({
             // Response received via SSE broadcast
             console.log('Received response via SSE broadcast');
 
-            // Clear any error messages
-            setNetworkError(null);
+            // Response received successfully
             setSuccessMessage(null);
 
             // Hide thinking animation if we're currently processing
@@ -741,25 +737,17 @@ export function FloatingChatInput({
 
           {/* Status Messages */}
           <AnimatePresence>
-            {(networkError || successMessage) && (
+            {successMessage && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 className="px-3.5 py-2 border-b border-white/20 dark:border-white/10"
               >
-                {networkError && (
-                  <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
-                    <AlertCircle size={16} />
-                    <span>{networkError}</span>
-                  </div>
-                )}
-                {successMessage && (
-                  <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                    <CheckCircle size={16} />
-                    <span>{successMessage}</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                  <CheckCircle size={16} />
+                  <span>{successMessage}</span>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

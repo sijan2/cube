@@ -19,7 +19,8 @@
       "Bash(taskkill:*)",
       "Bash(netstat:*)",
       "Bash(git push:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(git checkout:*)"
     ],
     "additionalDirectories": [
       "/Users/sijan/hackmit/ui-experiments/apps/experiment-06"

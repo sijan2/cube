@@ -8,10 +8,9 @@ import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
-  SidebarGroup,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import SidebarCalendar from "@/components/sidebar-calendar";
+import { ProjectOverview } from "@/components/project-overview";
 import { DailyBriefing } from "@/components/daily-briefing";
 import { ActionList } from "@/components/action-list";
 
@@ -29,10 +28,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarTrigger className="text-muted-foreground/80 hover:text-foreground/80 hover:bg-transparent!" />
         </div>
       </SidebarHeader>
-      <SidebarContent className="gap-0 mt-3 pt-3 border-t">
-        <SidebarGroup className="px-1">
-          <SidebarCalendar />
-        </SidebarGroup>
+      <SidebarContent className="gap-0">
+        <ProjectOverview />
         <DailyBriefing />
         <ActionList />
       </SidebarContent>

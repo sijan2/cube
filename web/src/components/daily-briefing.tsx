@@ -3,6 +3,19 @@
 import { useEffect, useState } from "react";
 import { RiSparkling2Line, RiCloseLine } from "@remixicon/react";
 import {
+  Briefcase,
+  Code2,
+  GraduationCap,
+  Plane,
+  Clock,
+  AlertCircle,
+  Target,
+  Calendar,
+  Users,
+  BookOpen,
+  ChevronRight
+} from "lucide-react";
+import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
@@ -10,22 +23,65 @@ import {
 
 interface Task {
   id: number;
+  title: string;
   content: string;
+  priority: "critical" | "high" | "medium";
+  icon: React.ReactNode;
+  deadline?: string;
+  progress?: number;
+  tags?: string[];
+  color?: string;
 }
 
 interface Briefing {
   tasks: Task[];
-  nudge?: string;
+  nudge?: {
+    message: string;
+    type: "warning" | "info" | "success";
+    icon?: React.ReactNode;
+  };
 }
 
-// Mock data for daily briefing
+// Dynamic briefing data for the next week
 const mockBriefing: Briefing = {
   tasks: [
-    { id: 1, content: "Finalize Q3 report and send for review" },
-    { id: 2, content: "Prepare for the upcoming client presentation" },
-    { id: 3, content: "Review and merge the latest pull requests" },
+    {
+      id: 1,
+      title: "Google SWE Interview",
+      content: "Critical career opportunity requiring immediate preparation and focus",
+      priority: "critical",
+      icon: <Briefcase className="w-4 h-4" />,
+      deadline: "Tomorrow, 2:00 PM",
+      tags: ["Career", "Interview", "Urgent"],
+      color: "from-red-500/60 to-orange-500/60"
+    },
+    {
+      id: 2,
+      title: "Project Architecture Dev",
+      content: "Led by Alex Onufrak with daily standups at 10:00 AM",
+      priority: "high",
+      icon: <Code2 className="w-4 h-4" />,
+      deadline: "Sept 15",
+      progress: 25,
+      tags: ["Development", "Team", "Deadline"],
+      color: "from-blue-500/60 to-indigo-500/60"
+    },
+    {
+      id: 3,
+      title: "Academic Coursework",
+      content: "CMSC 460/216 assignments, BMGT 289D lecture, Math problem sets",
+      priority: "medium",
+      icon: <GraduationCap className="w-4 h-4" />,
+      deadline: "This Week",
+      tags: ["CMSC 460", "CMSC 216", "BMGT 289D"],
+      color: "from-green-500/60 to-emerald-500/60"
+    },
   ],
-  nudge: "Don't forget to prepare for your next Midterm!",
+  nudge: {
+    message: "Flight to Washington - Monday at 11:15 AM. Remember to check in!",
+    type: "warning",
+    icon: <Plane className="w-4 h-4" />
+  },
 };
 
 // Simulate an API call
@@ -60,49 +116,130 @@ export function DailyBriefing() {
     getBriefing();
   }, []);
 
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "critical":
+        return "bg-muted/50 border-foreground/20 hover:bg-muted/70";
+      case "high":
+        return "bg-muted/30 border-foreground/15 hover:bg-muted/50";
+      case "medium":
+        return "bg-muted/20 border-foreground/10 hover:bg-muted/40";
+      default:
+        return "bg-muted/10 border-foreground/5";
+    }
+  };
+
+  const getNudgeStyles = (type: string) => {
+    return "bg-muted/40 border-foreground/10";
+  };
+
   return (
-    <SidebarGroup className="px-1 mt-3 pt-4 border-t">
+    <SidebarGroup className="px-1 pt-2">
       <SidebarGroupLabel className="uppercase text-muted-foreground/65 flex items-center gap-2 mb-2">
         <RiSparkling2Line size={14} />
-        <span>Top 3 Priorities</span>
+        <span>Top Priorities</span>
       </SidebarGroupLabel>
       <SidebarGroupContent>
-        <div className="text-sm text-muted-foreground space-y-3 px-2 py-1">
+        <div className="space-y-3 px-1">
           {isLoading ? (
             <div className="space-y-3 animate-pulse">
-              <div className="h-4 bg-muted/50 rounded w-full"></div>
-              <div className="h-4 bg-muted/50 rounded w-full"></div>
-              <div className="h-4 bg-muted/50 rounded w-4/5"></div>
+              <div className="h-20 bg-muted/30 rounded-lg"></div>
+              <div className="h-20 bg-muted/30 rounded-lg"></div>
+              <div className="h-20 bg-muted/30 rounded-lg"></div>
             </div>
           ) : error ? (
-            <p className="text-destructive-foreground/80 text-sm">{error}</p>
+            <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-lg border border-destructive/30">
+              <AlertCircle className="w-4 h-4 text-destructive" />
+              <p className="text-destructive text-sm">{error}</p>
+            </div>
           ) : briefing ? (
             <div className="space-y-3">
               {briefing.nudge && isNudgeVisible && (
-                <div className="flex items-start justify-between p-2.5 bg-muted/50 rounded-lg border">
-                  <p className="text-sm text-muted-foreground/90 leading-snug pr-2">
-                    {briefing.nudge}
-                  </p>
+                <div className={`flex items-start gap-3 p-3 rounded-lg border transition-all hover:shadow-sm ${getNudgeStyles(briefing.nudge.type)}`}>
+                  <div className="flex-shrink-0 mt-0.5">
+                    {briefing.nudge.icon}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium leading-snug">
+                      {briefing.nudge.message}
+                    </p>
+                  </div>
                   <button
                     onClick={() => setIsNudgeVisible(false)}
-                    className="text-muted-foreground/60 hover:text-muted-foreground transition-colors flex-shrink-0"
+                    className="flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity"
                   >
                     <RiCloseLine size={16} />
                   </button>
                 </div>
               )}
-              <ul className="space-y-2.5">
+
+              <div className="space-y-2">
                 {briefing.tasks.map((task, index) => (
-                  <li key={task.id} className="flex items-start gap-3">
-                    <div className="font-mono text-xs text-muted-foreground/80 pt-1">
-                      {index + 1}.
+                  <div
+                    key={task.id}
+                    className={`group relative p-3 rounded-lg border transition-all cursor-pointer overflow-hidden ${getPriorityColor(task.priority)}`}
+                  >
+                    {/* Color gradient strip on left */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${task.color || 'from-gray-500/20 to-gray-600/20'}`} />
+
+                    <div className="flex items-start gap-3 pl-2">
+                      <div className="flex-shrink-0 mt-0.5 text-muted-foreground/70">
+                        {task.icon}
+                      </div>
+
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h4 className="font-medium text-sm text-foreground/90">
+                              {task.title}
+                            </h4>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {task.content}
+                            </p>
+                          </div>
+                        </div>
+
+                        {task.progress !== undefined && (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">Progress</span>
+                              <span className="font-medium text-foreground/80">{task.progress}%</span>
+                            </div>
+                            <div className="h-1 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-foreground/20 transition-all"
+                                style={{ width: `${task.progress}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-3 text-xs">
+                          {task.deadline && (
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <Clock className="w-3 h-3" />
+                              <span>{task.deadline}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {task.tags && task.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {task.tags.map((tag, tagIndex) => (
+                              <span
+                                key={tagIndex}
+                                className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-muted text-muted-foreground"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="font-medium text-foreground/90 leading-snug">
-                      {task.content}
-                    </div>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           ) : null}
         </div>
