@@ -553,8 +553,7 @@ export function FloatingChatInput({
         transition={{ duration: 0.25, ease: "easeOut" }}
         className={cn(
           "pointer-events-auto mx-3 mb-3 sm:mx-6 group",
-          "rounded-xl border border-white/20 bg-white/80 shadow-xl backdrop-blur-xl backdrop-saturate-150",
-          "dark:border-white/10 dark:bg-white/5 dark:shadow-2xl",
+          "rounded-xl border border-zinc-800 bg-zinc-900 shadow-xl backdrop-blur-xl backdrop-saturate-150",
           "pb-safe",
           className,
         )}
@@ -585,8 +584,8 @@ export function FloatingChatInput({
             type="button"
             onClick={() => setIsMinimized(true)}
             className={cn(
-              "hidden sm:flex absolute right-2 top-2 size-7 items-center justify-center rounded-md text-zinc-500",
-              "transition-opacity hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100",
+              "hidden sm:flex absolute right-2 top-2 size-7 items-center justify-center rounded-md text-zinc-400",
+              "transition-opacity hover:bg-zinc-800 hover:text-white",
               "opacity-0 group-hover:opacity-100 focus:opacity-100",
             )}
             aria-label="Minimize"
@@ -610,7 +609,7 @@ export function FloatingChatInput({
                 onTouchStart={() => setIsMinimized(false)}
                 className={cn(
                   "flex w-full items-center gap-2 px-3.5 py-2",
-                  "text-sm text-zinc-700 dark:text-zinc-200",
+                  "text-sm text-zinc-200",
                 )}
                 aria-expanded={!isMinimized}
               >
@@ -633,15 +632,15 @@ export function FloatingChatInput({
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 8, scale: 0.98 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
-                className="w-full border-b border-white/20 dark:border-white/10"
+                className="w-full border-b border-zinc-800"
               >
                 <div className="flex items-start gap-2 px-3.5 py-3">
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                    <div className="truncate text-sm font-medium text-zinc-100">
                       {panelData?.title ?? "Event"}
                     </div>
                     {(panelData?.start || panelData?.location) && (
-                      <div className="mt-0.5 line-clamp-2 text-xs text-zinc-600 dark:text-zinc-400">
+                      <div className="mt-0.5 line-clamp-2 text-xs text-zinc-400">
                         {panelData?.start}
                         {panelData?.end ? ` — ${panelData.end}` : ""}
                         {panelData?.location ? ` · ${panelData.location}` : ""}
@@ -651,7 +650,7 @@ export function FloatingChatInput({
                   <button
                     type="button"
                     onClick={() => setPanelOpen(false)}
-                    className="flex size-7 shrink-0 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100"
+                    className="flex size-7 shrink-0 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
                     aria-label="Close"
                   >
                     <X size={14} />
@@ -670,11 +669,11 @@ export function FloatingChatInput({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
-                className="w-full border-b border-white/20 dark:border-white/10"
+                className="w-full border-b border-zinc-800"
               >
                 <div
                   ref={historyRef}
-                  className="max-h-60 overflow-y-auto px-3.5 py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                  className="max-h-60 overflow-y-auto px-3.5 py-2 bg-zinc-900 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                   style={{ overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
                 >
                   {messages.map((m, idx) => (
@@ -693,15 +692,16 @@ export function FloatingChatInput({
                             m.role === "user"
                               ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md"
                               : m.role === "assistant"
-                              ? "bg-white/95 dark:bg-zinc-800/95 backdrop-blur-sm border border-zinc-200 dark:border-zinc-700 shadow-sm"
-                              : "bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700",
+                              ? "bg-zinc-800 backdrop-blur-sm border border-zinc-700 shadow-sm"
+                              : "bg-zinc-800 border border-zinc-700",
                           )}
                         >
                           <MessageContent
                             content={m.text}
                             role={m.role}
                             className={cn(
-                              m.role === "user" && "!text-white prose-headings:!text-white prose-strong:!text-white prose-em:!text-white/90"
+                              m.role === "user" && "!text-white prose-headings:!text-white prose-strong:!text-white prose-em:!text-white/90",
+                              m.role === "assistant" && "!text-white prose-headings:!text-white prose-strong:!text-white"
                             )}
                           />
                         </div>
@@ -742,9 +742,9 @@ export function FloatingChatInput({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="px-3.5 py-2 border-b border-white/20 dark:border-white/10"
+                className="px-3.5 py-2 border-b border-zinc-800 bg-zinc-900"
               >
-                <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                <div className="flex items-center gap-2 text-sm text-green-400">
                   <CheckCircle size={16} />
                   <span>{successMessage}</span>
                 </div>
@@ -770,8 +770,7 @@ export function FloatingChatInput({
             rows={1}
             className={cn(
               "w-full resize-none border-none bg-transparent px-3.5 py-3 text-sm leading-6",
-              "text-zinc-900 placeholder:text-zinc-500",
-              "dark:text-zinc-100 dark:placeholder:text-zinc-400",
+              "text-white placeholder:text-zinc-400",
               "outline-none",
             )}
           />
@@ -783,8 +782,8 @@ export function FloatingChatInput({
               className={cn(
                 "flex size-8 items-center justify-center rounded-full transition-colors",
                 isSpeaking
-                  ? "bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400"
-                  : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                  ? "bg-red-600 text-white"
+                  : "text-zinc-400 hover:text-white"
               )}
               aria-label={isSpeaking ? "Stop speaking" : "Text to speech"}
             >
@@ -797,8 +796,8 @@ export function FloatingChatInput({
               className={cn(
                 "flex size-8 items-center justify-center rounded-full transition-colors",
                 isListening
-                  ? "bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 animate-pulse"
-                  : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                  ? "bg-blue-600 text-white animate-pulse"
+                  : "text-zinc-400 hover:text-white"
               )}
               aria-label={isListening ? "Stop listening" : "Voice to text"}
             >
@@ -814,7 +813,7 @@ export function FloatingChatInput({
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.15 }}
-                    className="flex size-8 items-center justify-center rounded-full text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                    className="flex size-8 items-center justify-center rounded-full text-zinc-400 transition-colors hover:text-white"
                     aria-label="AI assist"
                   >
                     <Sparkles size={16} />
@@ -825,7 +824,7 @@ export function FloatingChatInput({
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.15, delay: 0.05 }}
-                    className="flex size-8 items-center justify-center rounded-full text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                    className="flex size-8 items-center justify-center rounded-full text-zinc-400 transition-colors hover:text-white"
                     aria-label="Attach"
                   >
                     <Paperclip size={16} />
@@ -836,7 +835,7 @@ export function FloatingChatInput({
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.15, delay: 0.1 }}
-                    className="flex size-8 items-center justify-center rounded-full text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                    className="flex size-8 items-center justify-center rounded-full text-zinc-400 transition-colors hover:text-white"
                     aria-label="Create event"
                   >
                     <Calendar size={16} />
@@ -850,8 +849,7 @@ export function FloatingChatInput({
               disabled={!value.trim() || isProcessing}
               className={cn(
                 "flex size-8 items-center justify-center rounded-lg bg-blue-500 text-white transition-colors active:scale-[0.98]",
-                "disabled:bg-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed",
-                "dark:disabled:bg-zinc-500",
+                "disabled:bg-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed",
                 isProcessing && "animate-pulse"
               )}
               aria-label={isProcessing ? "Processing..." : "Send"}

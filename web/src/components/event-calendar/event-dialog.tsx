@@ -5,6 +5,7 @@ import { RiCalendarLine, RiDeleteBinLine } from "@remixicon/react";
 import { format, isBefore } from "date-fns";
 
 import type { CalendarEvent, EventColor } from "@/components/event-calendar";
+import { getSmartEventColor } from "@/components/event-calendar/utils";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -200,10 +201,34 @@ export function EventDialog({
       borderClass: "border-blue-400 data-[state=checked]:border-blue-400",
     },
     {
+      value: "sky",
+      label: "Sky",
+      bgClass: "bg-sky-400 data-[state=checked]:bg-sky-400",
+      borderClass: "border-sky-400 data-[state=checked]:border-sky-400",
+    },
+    {
+      value: "indigo",
+      label: "Indigo",
+      bgClass: "bg-indigo-400 data-[state=checked]:bg-indigo-400",
+      borderClass: "border-indigo-400 data-[state=checked]:border-indigo-400",
+    },
+    {
       value: "violet",
       label: "Violet",
       bgClass: "bg-violet-400 data-[state=checked]:bg-violet-400",
       borderClass: "border-violet-400 data-[state=checked]:border-violet-400",
+    },
+    {
+      value: "purple",
+      label: "Purple",
+      bgClass: "bg-purple-400 data-[state=checked]:bg-purple-400",
+      borderClass: "border-purple-400 data-[state=checked]:border-purple-400",
+    },
+    {
+      value: "pink",
+      label: "Pink",
+      bgClass: "bg-pink-400 data-[state=checked]:bg-pink-400",
+      borderClass: "border-pink-400 data-[state=checked]:border-pink-400",
     },
     {
       value: "rose",
@@ -212,16 +237,46 @@ export function EventDialog({
       borderClass: "border-rose-400 data-[state=checked]:border-rose-400",
     },
     {
-      value: "emerald",
-      label: "Emerald",
-      bgClass: "bg-emerald-400 data-[state=checked]:bg-emerald-400",
-      borderClass: "border-emerald-400 data-[state=checked]:border-emerald-400",
+      value: "red",
+      label: "Red",
+      bgClass: "bg-red-400 data-[state=checked]:bg-red-400",
+      borderClass: "border-red-400 data-[state=checked]:border-red-400",
     },
     {
       value: "orange",
       label: "Orange",
       bgClass: "bg-orange-400 data-[state=checked]:bg-orange-400",
       borderClass: "border-orange-400 data-[state=checked]:border-orange-400",
+    },
+    {
+      value: "yellow",
+      label: "Yellow",
+      bgClass: "bg-yellow-400 data-[state=checked]:bg-yellow-400",
+      borderClass: "border-yellow-400 data-[state=checked]:border-yellow-400",
+    },
+    {
+      value: "green",
+      label: "Green",
+      bgClass: "bg-green-400 data-[state=checked]:bg-green-400",
+      borderClass: "border-green-400 data-[state=checked]:border-green-400",
+    },
+    {
+      value: "emerald",
+      label: "Emerald",
+      bgClass: "bg-emerald-400 data-[state=checked]:bg-emerald-400",
+      borderClass: "border-emerald-400 data-[state=checked]:border-emerald-400",
+    },
+    {
+      value: "teal",
+      label: "Teal",
+      bgClass: "bg-teal-400 data-[state=checked]:bg-teal-400",
+      borderClass: "border-teal-400 data-[state=checked]:border-teal-400",
+    },
+    {
+      value: "cyan",
+      label: "Cyan",
+      bgClass: "bg-cyan-400 data-[state=checked]:bg-cyan-400",
+      borderClass: "border-cyan-400 data-[state=checked]:border-cyan-400",
     },
   ];
 
@@ -247,7 +302,14 @@ export function EventDialog({
             <Input
               id="title"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                // Auto-assign color for new events based on title
+                if (!event?.id && e.target.value) {
+                  const smartColor = getSmartEventColor(e.target.value, description);
+                  setColor(smartColor);
+                }
+              }}
             />
           </div>
 
@@ -256,7 +318,14 @@ export function EventDialog({
             <Textarea
               id="description"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                // Auto-assign color for new events based on description
+                if (!event?.id && title) {
+                  const smartColor = getSmartEventColor(title, e.target.value);
+                  setColor(smartColor);
+                }
+              }}
               rows={3}
             />
           </div>
@@ -416,7 +485,7 @@ export function EventDialog({
               Etiquette
             </legend>
             <RadioGroup
-              className="flex gap-1.5"
+              className="grid grid-cols-7 gap-1.5"
               defaultValue={colorOptions[0]?.value}
               value={color}
               onValueChange={(value: EventColor) => setColor(value)}

@@ -8,6 +8,7 @@ import PixelTrail from '../components/fancy/background/pixel-trail'
 
 function App() {
   const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set())
+  const [hoveredFeature, setHoveredFeature] = useState<string | null>(null)
   
   const headerRef = useRef<HTMLElement>(null)
   const featuresRef = useRef<HTMLElement>(null)
@@ -55,7 +56,7 @@ function App() {
           <nav className="w-full bg-gradient-to-b from-[#FF6B00]/40 to-white">
             <div className="flex items-center justify-between p-8 max-w-7xl mx-auto">
             <div className="text-2xl font-bold text-gray-900 poly-regular">
-              mcp<sup className="text-lg">3</sup>
+              mcp<sup className="text-lg">2</sup>
             </div>
             <div className="hidden md:flex items-center gap-12 absolute left-1/2 -translate-x-1/2">
               <button className="text-gray-900/80 hover:text-gray-900 flex items-center gap-1 transition-all group">
@@ -116,10 +117,10 @@ function App() {
             </div>
             
             {/* Video/Image placeholder */}
-            <StarBorder color="#FF6B00" speed="8s" className="w-full max-w-[64rem] aspect-square mt-24 overflow-hidden">
-              <div className="w-full h-full">
+            <StarBorder color="#FF6B00" speed="8s" className="w-full max-w-[90rem] mt-24 overflow-hidden">
+              <div className="w-full aspect-video">
                 <iframe
-                  src="https://www.loom.com/embed/b0996ec8eb99414a9c1e8743624770e9?sid=eaa07780-90e2-49fb-b54d-e8cacf2a7815"
+                  src="https://drive.google.com/file/d/1zICcVqgyGP_gBaEjjAdBbhK3H38T8rOq/preview"
                   className="w-full h-full"
                   frameBorder="0"
                   allow="autoplay; fullscreen; picture-in-picture"
@@ -134,54 +135,89 @@ function App() {
         <section 
           ref={featuresRef}
           data-section="features" 
-          className={`relative flex flex-row items-start gap-10 py-48 max-w-[600rem] mx-auto px-6 transition-all duration-1000 ${visibleSections.has('features') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}
+          className={`relative flex flex-row items-start justify-center gap-16 py-72 mx-auto px-6 transition-all duration-1000 ${visibleSections.has('features') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}
         >
-          <GradualBlur target="parent" position="top" height="10rem" strength={2} divCount={5} curve="bezier" exponential={true} opacity={1} />
-          <div className="w-[3000%] pl-24">
-            <h2 className="text-7xl font-normal leading-tight mb-12 poly-regular max-w-2xl">
+          <div className="w-[400px] pl-8 flex-shrink-0">
+            <h2 className="text-7xl font-normal leading-tight mb-12 poly-regular">
               <div className="text-gray-900">built for</div>
               <div className="-mt-4">
                 <span className="poly-regular-italic text-orange-400 hover:text-orange-500 transition-all duration-300 cursor-pointer transform hover:-translate-y-1">busy people</span>
               </div>
             </h2>
-            <p className="text-gray-600 text-xl mb-12 max-w-xl">
+            <p className="text-gray-600 text-base mb-4">
               Everything you need to <TextHighlighter direction="ltr">prepare effectively</TextHighlighter> and <TextHighlighter direction="ltr">stay organized</TextHighlighter>.
             </p>
 
-            <div className="grid grid-cols-1 gap-6">
-              <div className="bg-gray-100 rounded-lg p-6 group hover:bg-orange-50 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Calendar Sync</h3>
-                <p className="text-gray-600 text-base">
+            <div className="grid grid-cols-1 gap-2">
+              <div 
+                className="calendar-sync-card bg-gray-100 rounded-lg p-3 group hover:bg-orange-50 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer"
+                onMouseEnter={() => setHoveredFeature('calendar')}
+                onMouseLeave={() => setHoveredFeature(null)}
+              >
+                <h3 className="text-base font-medium text-gray-900 mb-1">Calendar Sync</h3>
+                <p className="text-gray-600 text-sm">
                   works with Google + Outlook.
                 </p>
               </div>
 
-              <div className="bg-gray-100 rounded-lg p-6 group hover:bg-orange-50 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Company Insights</h3>
-                <p className="text-gray-600 text-base">
+              <div 
+                className="company-insights-card bg-gray-100 rounded-lg p-3 group hover:bg-orange-50 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer"
+                onMouseEnter={() => setHoveredFeature('insights')}
+                onMouseLeave={() => setHoveredFeature(null)}
+              >
+                <h3 className="text-base font-medium text-gray-900 mb-1">Company Insights</h3>
+                <p className="text-gray-600 text-sm">
                   instant research before you meet them.
                 </p>
               </div>
 
-              <div className="bg-gray-100 rounded-lg p-6 group hover:bg-orange-50 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Leetcode Integration</h3>
-                <p className="text-gray-600 text-base">
+              <div 
+                className="leetcode-card bg-gray-100 rounded-lg p-3 group hover:bg-orange-50 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer"
+                onMouseEnter={() => setHoveredFeature('leetcode')}
+                onMouseLeave={() => setHoveredFeature(null)}
+              >
+                <h3 className="text-base font-medium text-gray-900 mb-1">Leetcode Integration</h3>
+                <p className="text-gray-600 text-sm">
                   personalized coding prep, scheduled automatically.
                 </p>
               </div>
 
-              <div className="bg-gray-100 rounded-lg p-6 group hover:bg-orange-50 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">AI Reminders</h3>
-                <p className="text-gray-600 text-base">
+              <div 
+                className="ai-reminders-card bg-gray-100 rounded-lg p-3 group hover:bg-orange-50 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer"
+                onMouseEnter={() => setHoveredFeature('reminders')}
+                onMouseLeave={() => setHoveredFeature(null)}
+              >
+                <h3 className="text-base font-medium text-gray-900 mb-1">AI Reminders</h3>
+                <p className="text-gray-600 text-sm">
                   prep sessions timed to keep you sharp, not stressed.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="w-[800%]">
-            <div className="w-full h-[44rem] bg-gray-100 rounded-xl flex items-center justify-center sticky top-32 transform hover:scale-[1.02] hover:shadow-lg transition-all duration-300">
-              <span className="text-gray-400 text-lg">feature demo</span>
+          <div className="flex-1 relative min-w-0 pr-8 ml-16">
+            <div className="w-full h-[24rem] rounded-xl flex items-center justify-center sticky top-48 overflow-hidden mt-24">
+              <img src="/featuredemo.png" alt="Feature Demo" className="w-full h-full object-cover" />
+              
+              {/* Calendar Sync Highlight */}
+              <div className={`absolute inset-0 transition-opacity duration-300 pointer-events-none ${hoveredFeature === 'calendar' ? 'opacity-100' : 'opacity-0'}`}>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[45%] h-[55%] border-2 border-orange-500 rounded-lg" />
+              </div>
+              
+              {/* Company Insights Highlight */}
+              <div className={`absolute inset-0 transition-opacity duration-300 pointer-events-none ${hoveredFeature === 'insights' ? 'opacity-100' : 'opacity-0'}`}>
+                <div className="absolute top-0 right-0 bottom-0 w-[25%] border-2 border-orange-500 rounded-lg" />
+              </div>
+              
+              {/* Leetcode Integration Highlight */}
+              <div className={`absolute inset-0 transition-opacity duration-300 pointer-events-none ${hoveredFeature === 'leetcode' ? 'opacity-100' : 'opacity-0'}`}>
+                <div className="absolute top-0 left-0 bottom-0 w-[25%] border-2 border-orange-500 rounded-lg" />
+              </div>
+              
+              {/* AI Reminders Highlight */}
+              <div className={`absolute inset-0 transition-opacity duration-300 pointer-events-none ${hoveredFeature === 'reminders' ? 'opacity-100' : 'opacity-0'}`}>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[45%] h-[55%] border-2 border-orange-500 rounded-lg" />
+              </div>
             </div>
           </div>
         </section>
@@ -190,7 +226,7 @@ function App() {
         <section 
           ref={chaosRef}
           data-section="chaos"
-          className={`relative flex flex-col items-center py-48 text-center max-w-4xl mx-auto px-6 overflow-hidden transition-all duration-1000 ${visibleSections.has('chaos') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}
+          className={`relative flex flex-col items-center py-72 text-center max-w-4xl mx-auto px-6 overflow-hidden transition-all duration-1000 ${visibleSections.has('chaos') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}
         >
           <GradualBlur target="parent" position="top" height="10rem" strength={2} divCount={5} curve="bezier" exponential={true} opacity={1} />
           <h2 className="text-7xl font-normal leading-tight mb-12 poly-regular">
@@ -204,7 +240,7 @@ function App() {
               Most people waste hours <TextHighlighter direction="ltr">juggling calendars</TextHighlighter>, <TextHighlighter direction="ltr">digging through emails</TextHighlighter>, and <TextHighlighter direction="ltr">cramming prep</TextHighlighter>.
             </p>
             <p className="text-gray-600 text-2xl leading-relaxed mt-4 max-w-2xl mx-auto">
-              <TextHighlighter direction="ltr">MCP</TextHighlighter><sup>3</sup> gives you <TextHighlighter direction="ltr">clarity</TextHighlighter>, <TextHighlighter direction="ltr">structure</TextHighlighter>, and <TextHighlighter direction="ltr">focus</TextHighlighter>, without the stress.
+              <TextHighlighter direction="ltr">MCP</TextHighlighter><sup>2</sup> gives you <TextHighlighter direction="ltr">clarity</TextHighlighter>, <TextHighlighter direction="ltr">structure</TextHighlighter>, and <TextHighlighter direction="ltr">focus</TextHighlighter>, without the stress.
             </p>
           </div>
         </section>
@@ -226,12 +262,14 @@ function App() {
               <span className="poly-regular-italic text-orange-400">at a glance</span>
             </h2>
 
-            <p className="text-gray-600 text-2xl leading-relaxed mb-24 max-w-2xl mx-auto">
+            <p className="text-gray-600 text-2xl leading-relaxed mb-16 max-w-2xl mx-auto">
               See your <TextHighlighter direction="ltr">upcoming interviews</TextHighlighter>, <TextHighlighter direction="ltr">prep tasks</TextHighlighter>, and <TextHighlighter direction="ltr">AI-generated questions</TextHighlighter> in one clean view.
             </p>
 
-            <StarBorder color="#FF6B00" speed="8s" className="w-full max-w-[90rem] h-[28rem] overflow-hidden">
-              <span className="text-gray-400">screenshot style</span>
+            <StarBorder color="#FF6B00" speed="8s" className="w-full max-w-[90rem] h-[22rem] overflow-hidden">
+              <div className="w-full h-full">
+                <img src="/featuredemo.png" alt="Feature Demo" className="w-full h-full object-cover" />
+              </div>
             </StarBorder>
           </div>
         </section>
@@ -239,7 +277,7 @@ function App() {
         {/* Start Today Section */}
         <section 
           data-section="start"
-          className={`flex flex-col items-center py-32 text-center max-w-4xl mx-auto px-6 transition-all duration-1000 ${visibleSections.has('start') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}
+          className={`flex flex-col items-center py-72 text-center max-w-4xl mx-auto px-6 transition-all duration-1000 ${visibleSections.has('start') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}
         >
           <h2 className="text-7xl font-normal leading-tight mb-12 poly-regular">
             <span className="text-gray-900">start</span>{' '}
@@ -263,7 +301,7 @@ function App() {
             <div className="flex flex-col md:flex-row justify-between items-start gap-16">
               <div>
                 <div className="text-4xl font-bold text-gray-900 poly-regular">
-                  mcp<sup>3</sup>
+                  mcp<sup>2</sup>
                 </div>
                 <p className="text-gray-600 text-lg leading-relaxed max-w-sm poly-regular mt-2">
                   AI that schedules, prepares, and gets<br />you ready to ace every interview.

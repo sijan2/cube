@@ -370,12 +370,12 @@ export function RightPanelChat({
       {/* Minimized floating bubble */}
       {!isExpanded && (
         <div
-          className="pointer-events-auto fixed right-4 bottom-4 flex items-center gap-2 px-3 h-10 rounded-full bg-background/95 border border-border shadow-xl cursor-pointer hover:bg-muted/95 transition-colors"
+          className="pointer-events-auto fixed right-4 bottom-4 flex items-center gap-2 px-3 h-10 rounded-full bg-zinc-900/95 border border-zinc-800 shadow-xl cursor-pointer hover:bg-zinc-800/95 transition-colors"
           onClick={() => { setIsExpanded(true); setIsFloating(false); }}
           aria-label="Open chat"
         >
-          <MessageSquare size={16} className="text-muted-foreground" />
-          <span className="text-xs text-foreground">Open Chat</span>
+          <MessageSquare size={16} className="text-zinc-400" />
+          <span className="text-xs text-white">Open Chat</span>
         </div>
       )}
 
@@ -390,8 +390,8 @@ export function RightPanelChat({
             className={cn(
               "pointer-events-auto flex flex-col shadow-2xl",
               isFloating
-                ? "fixed border border-border bg-background rounded-lg"
-                : "fixed right-0 top-0 bottom-0 bg-background border-l border-border rounded-l-lg"
+                ? "fixed border border-zinc-800 bg-zinc-900 rounded-lg"
+                : "fixed right-0 top-0 bottom-0 bg-zinc-900 border-l border-zinc-800 rounded-l-lg"
             )}
             style={
               isFloating
@@ -411,7 +411,7 @@ export function RightPanelChat({
             {/* Header (drag handle in floating mode) */}
             <div
               className={cn(
-                "flex items-center justify-between p-3 border-b border-border select-none",
+                "flex items-center justify-between p-3 border-b border-zinc-800 select-none text-white",
                 isFloating ? "cursor-move" : ""
               )}
               onPointerDown={handleFloatingDragStart}
@@ -422,7 +422,7 @@ export function RightPanelChat({
                   <div className="w-2 h-2 rounded-full bg-green-500"></div>
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-ping absolute top-0"></div>
                 </div>
-                <span className="text-sm font-medium text-foreground">mcp² Assistant</span>
+                <span className="text-sm font-medium text-white">mcp² Assistant</span>
               </div>
               <div className="flex items-center gap-1">
                 <button
@@ -434,7 +434,7 @@ export function RightPanelChat({
                       setIsFloating(false);
                     }
                   }}
-                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  className="p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
                   aria-label={isFloating ? "Dock" : "Undock / Float"}
                 >
                   <Move size={16} />
@@ -445,14 +445,14 @@ export function RightPanelChat({
                     setIsFloating(false);
                     setIsExpanded(false);
                   }}
-                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  className="p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
                   aria-label="Minimize"
                 >
                   <Minus size={16} />
                 </button>
                 <button
                   onClick={() => setIsExpanded(false)}
-                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  className="p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
                   aria-label="Close"
                 >
                   <ChevronRight size={16} />
@@ -464,11 +464,11 @@ export function RightPanelChat({
             <div className="flex-1 flex flex-col min-h-0 rounded-b-lg">
               <div
                 ref={historyRef}
-                className="flex-1 overflow-y-auto px-4 py-4 scrollbar-hide"
+                className="flex-1 overflow-y-auto px-4 py-4 scrollbar-hide bg-zinc-900"
               >
                 {messages.length === 0 && (
                   <div className="flex items-center justify-center h-32 text-center">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-zinc-400">
                       Start a conversation with your<br />personal AI assistant
                     </p>
                   </div>
@@ -488,8 +488,8 @@ export function RightPanelChat({
                         className={cn(
                           "rounded-lg px-3 py-2",
                           m.role === "user"
-                            ? "bg-foreground text-background"
-                            : "bg-muted border border-border text-foreground"
+                            ? "bg-blue-600 text-white"
+                            : "bg-zinc-800 border border-zinc-700 text-white"
                         )}
                       >
                         <MessageContent
@@ -498,8 +498,8 @@ export function RightPanelChat({
                           className={cn(
                             "text-sm",
                             m.role === "user"
-                              ? "!text-background prose-headings:!text-background prose-p:!text-background prose-strong:!text-background"
-                              : "!text-foreground prose-headings:!text-foreground prose-p:!text-foreground"
+                              ? "!text-white prose-headings:!text-white prose-p:!text-white prose-strong:!text-white"
+                              : "!text-white prose-headings:!text-white prose-p:!text-white"
                           )}
                         />
                       </div>
@@ -531,7 +531,7 @@ export function RightPanelChat({
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="px-4 py-2 border-t border-border"
+                    className="px-4 py-2 border-t border-zinc-800 bg-zinc-900"
                   >
                     <div className="flex items-center gap-2 text-xs text-green-400">
                       <CheckCircle size={14} />
@@ -542,7 +542,7 @@ export function RightPanelChat({
               </AnimatePresence>
 
               {/* Input Area */}
-              <div className="border-t border-border p-4">
+              <div className="border-t border-zinc-800 p-4 bg-zinc-900">
                 <div className="flex items-end gap-2">
                   <div className="flex-1 relative">
                     <textarea
@@ -553,9 +553,9 @@ export function RightPanelChat({
                       placeholder={placeholder}
                       rows={1}
                       className={cn(
-                        "w-full resize-none border border-border bg-muted px-3 py-2 text-sm text-foreground",
-                        "rounded-lg placeholder:text-muted-foreground",
-                        "focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring",
+                        "w-full resize-none border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white",
+                        "rounded-lg placeholder:text-zinc-400",
+                        "focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
                       )}
                     />
                   </div>
@@ -568,8 +568,8 @@ export function RightPanelChat({
                       className={cn(
                         "flex size-8 items-center justify-center rounded-lg transition-colors",
                         isSpeaking
-                          ? "bg-destructive text-destructive-foreground"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                          ? "bg-red-600 text-white"
+                          : "text-zinc-400 hover:text-white hover:bg-zinc-800"
                       )}
                     >
                       {isSpeaking ? <VolumeX size={16} /> : <Volume2 size={16} />}
@@ -581,8 +581,8 @@ export function RightPanelChat({
                       className={cn(
                         "flex size-8 items-center justify-center rounded-lg transition-colors",
                         isListening
-                          ? "bg-foreground text-background animate-pulse"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                          ? "bg-blue-600 text-white animate-pulse"
+                          : "text-zinc-400 hover:text-white hover:bg-zinc-800"
                       )}
                     >
                       {isListening ? <MicOff size={16} /> : <Mic size={16} />}
@@ -593,9 +593,9 @@ export function RightPanelChat({
                       onClick={handleSend}
                       disabled={!value.trim() || isProcessing}
                       className={cn(
-                        "flex size-8 items-center justify-center rounded-lg bg-foreground text-background",
+                        "flex size-8 items-center justify-center rounded-lg bg-blue-600 text-white",
                         "transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                        "hover:bg-foreground/90 active:scale-95"
+                        "hover:bg-blue-700 active:scale-95"
                       )}
                     >
                       <SendHorizontal size={16} />

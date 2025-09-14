@@ -51,6 +51,7 @@ export interface EventCalendarProps {
   onEventAdd?: (event: CalendarEvent) => void;
   onEventUpdate?: (event: CalendarEvent) => void;
   onEventDelete?: (eventId: string) => void;
+  onStarClick?: (event: CalendarEvent) => void;
   className?: string;
   initialView?: CalendarView;
   onViewChange?: (view: CalendarView) => void;
@@ -62,6 +63,7 @@ export function EventCalendar({
   onEventAdd,
   onEventUpdate,
   onEventDelete,
+  onStarClick,
   className,
   initialView = "month",
   onViewChange,
@@ -395,6 +397,7 @@ export function EventCalendar({
               events={events}
               onEventSelect={handleEventSelect}
               onEventCreate={handleEventCreate}
+              onStarClick={onStarClick}
             />
           )}
           {view === "week" && (
@@ -403,6 +406,7 @@ export function EventCalendar({
               events={events}
               onEventSelect={handleEventSelect}
               onEventCreate={handleEventCreate}
+              onStarClick={onStarClick}
             />
           )}
           {view === "day" && (
@@ -411,6 +415,7 @@ export function EventCalendar({
               events={events}
               onEventSelect={handleEventSelect}
               onEventCreate={handleEventCreate}
+              onStarClick={onStarClick}
             />
           )}
           {view === "agenda" && (
@@ -418,6 +423,7 @@ export function EventCalendar({
               currentDate={currentDate}
               events={events}
               onEventSelect={handleEventSelect}
+              onStarClick={onStarClick}
             />
           )}
         </div>

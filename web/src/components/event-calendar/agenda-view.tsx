@@ -15,12 +15,14 @@ interface AgendaViewProps {
   currentDate: Date;
   events: CalendarEvent[];
   onEventSelect: (event: CalendarEvent) => void;
+  onStarClick?: (event: CalendarEvent) => void;
 }
 
 export function AgendaView({
   currentDate,
   events,
   onEventSelect,
+  onStarClick,
 }: AgendaViewProps) {
   // Show events for the next days based on constant
   const days = useMemo(() => {
@@ -78,6 +80,7 @@ export function AgendaView({
                     event={event}
                     view="agenda"
                     onClick={(e) => handleEventClick(event, e)}
+                    onStarClick={onStarClick}
                   />
                 ))}
               </div>

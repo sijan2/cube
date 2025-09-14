@@ -35,6 +35,7 @@ interface WeekViewProps {
   events: CalendarEvent[];
   onEventSelect: (event: CalendarEvent) => void;
   onEventCreate: (startTime: Date) => void;
+  onStarClick?: (event: CalendarEvent) => void;
 }
 
 interface PositionedEvent {
@@ -51,6 +52,7 @@ export function WeekView({
   events,
   onEventSelect,
   onEventCreate,
+  onStarClick,
 }: WeekViewProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const days = useMemo(() => {
@@ -305,6 +307,7 @@ export function WeekView({
                         view="month"
                         isFirstDay={isFirstDay}
                         isLastDay={isLastDay}
+                        onStarClick={onStarClick}
                       >
                         {/* Show title if it's the first day of the event or the first visible day in the week */}
                         <div
@@ -367,6 +370,7 @@ export function WeekView({
                     event={positionedEvent.event}
                     view="week"
                     onClick={(e) => handleEventClick(positionedEvent.event, e)}
+                    onStarClick={onStarClick}
                     showTime
                     height={positionedEvent.height}
                   />

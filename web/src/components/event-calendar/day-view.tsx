@@ -30,6 +30,7 @@ interface DayViewProps {
   events: CalendarEvent[];
   onEventSelect: (event: CalendarEvent) => void;
   onEventCreate: (startTime: Date) => void;
+  onStarClick?: (event: CalendarEvent) => void;
 }
 
 interface PositionedEvent {
@@ -46,6 +47,7 @@ export function DayView({
   events,
   onEventSelect,
   onEventCreate,
+  onStarClick,
 }: DayViewProps) {
   const timeColumnRef = useRef<HTMLDivElement>(null);
   const eventsColumnRef = useRef<HTMLDivElement>(null);
@@ -249,6 +251,7 @@ export function DayView({
                     view="month"
                     isFirstDay={isFirstDay}
                     isLastDay={isLastDay}
+                    onStarClick={onStarClick}
                   >
                     {/* Always show the title in day view for better usability */}
                     <div>{event.title}</div>
@@ -301,6 +304,7 @@ export function DayView({
                   event={positionedEvent.event}
                   view="day"
                   onClick={(e) => handleEventClick(positionedEvent.event, e)}
+                  onStarClick={onStarClick}
                   showTime
                   height={positionedEvent.height}
                 />

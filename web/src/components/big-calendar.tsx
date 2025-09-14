@@ -875,12 +875,42 @@ export default function Component({ apiEvents }: { apiEvents?: ApiCalendarEvent[
     setCurrentDate(newDate);
   };
 
+  const handleStarClick = (event: CalendarEvent) => {
+    console.log('🌟 Star clicked on event:', event.title);
+
+    // Create a formatted event context message
+    const eventContext = `
+📅 Event: ${event.title}
+⏰ Time: ${event.allDay ? 'All day' : `${new Date(event.start).toLocaleString()} - ${new Date(event.end).toLocaleString()}`}
+${event.location ? `📍 Location: ${event.location}` : ''}
+${event.description ? `📋 Description: ${event.description}` : ''}
+    `.trim();
+
+    console.log('📝 Event context created:', eventContext);
+
+    // Dispatch event to open right panel chat with this context
+    console.log('🚀 Dispatching right-panel-chat:open-docked event');
+    window.dispatchEvent(new CustomEvent('right-panel-chat:open-docked'));
+
+    // Add event context to floating chat as well
+    console.log('💬 Dispatching floating-chat:append-message event');
+    window.dispatchEvent(new CustomEvent('floating-chat:append-message', {
+      detail: {
+        role: 'user',
+        text: `Please help me with this event: ${eventContext}`
+      }
+    }));
+
+    console.log('✅ Event added to chat context successfully:', event);
+  };
+
   return (
     <EventCalendar
       events={visibleEvents}
       onEventAdd={handleEventAdd}
       onEventUpdate={handleEventUpdate}
       onEventDelete={handleEventDelete}
+      onStarClick={handleStarClick}
       initialView="week"
       onViewChange={handleViewChange}
       onDateChange={handleDateChange}
