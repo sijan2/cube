@@ -66,7 +66,7 @@ export class GoogleCalendarService {
       const allItems: any[] = [];
       let pageIndex = 0;
       do {
-        const response = await calendar.events.list({ ...queryParams, pageToken });
+        const response: any = await calendar.events.list({ ...queryParams, pageToken });
         pageIndex += 1;
         const items = response.data.items ?? [];
         console.log(`📅 Google Calendar API response (page ${pageIndex}):`, {
@@ -76,7 +76,7 @@ export class GoogleCalendarService {
         });
 
         // Log each event summary and date for debugging
-        items.forEach((item, index) => {
+        items.forEach((item: any, index: number) => {
           console.log(`📅 Event ${allItems.length + index + 1}:`, {
             summary: item.summary,
             start: item.start,

@@ -5,7 +5,9 @@
       "Bash(pnpm run:*)",
       "Bash(pnpm add:*)",
       "Bash(git stash push:*)",
-      "Bash(pnpm install:*)"
+      "Bash(pnpm install:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "additionalDirectories": [
       "/Users/sijan/hackmit/ui-experiments/apps/experiment-06"
