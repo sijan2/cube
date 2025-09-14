@@ -55,7 +55,7 @@ function App() {
           <nav className="w-full bg-gradient-to-b from-[#FF6B00]/40 to-white">
             <div className="flex items-center justify-between p-8 max-w-7xl mx-auto">
             <div className="text-2xl font-bold text-gray-900 poly-regular">
-              mcp<sup className="text-lg">3</sup>
+              mcp<sup className="text-lg">2</sup>
             </div>
             <div className="hidden md:flex items-center gap-12 absolute left-1/2 -translate-x-1/2">
               <button className="text-gray-900/80 hover:text-gray-900 flex items-center gap-1 transition-all group">
@@ -204,7 +204,7 @@ function App() {
               Most people waste hours <TextHighlighter direction="ltr">juggling calendars</TextHighlighter>, <TextHighlighter direction="ltr">digging through emails</TextHighlighter>, and <TextHighlighter direction="ltr">cramming prep</TextHighlighter>.
             </p>
             <p className="text-gray-600 text-2xl leading-relaxed mt-4 max-w-2xl mx-auto">
-              <TextHighlighter direction="ltr">MCP</TextHighlighter><sup>3</sup> gives you <TextHighlighter direction="ltr">clarity</TextHighlighter>, <TextHighlighter direction="ltr">structure</TextHighlighter>, and <TextHighlighter direction="ltr">focus</TextHighlighter>, without the stress.
+              <TextHighlighter direction="ltr">MCP</TextHighlighter><sup>2</sup> gives you <TextHighlighter direction="ltr">clarity</TextHighlighter>, <TextHighlighter direction="ltr">structure</TextHighlighter>, and <TextHighlighter direction="ltr">focus</TextHighlighter>, without the stress.
             </p>
           </div>
         </section>
@@ -263,7 +263,7 @@ function App() {
             <div className="flex flex-col md:flex-row justify-between items-start gap-16">
               <div>
                 <div className="text-4xl font-bold text-gray-900 poly-regular">
-                  mcp<sup>3</sup>
+                  mcp<sup>2</sup>
                 </div>
                 <p className="text-gray-600 text-lg leading-relaxed max-w-sm poly-regular mt-2">
                   AI that schedules, prepares, and gets<br />you ready to ace every interview.
