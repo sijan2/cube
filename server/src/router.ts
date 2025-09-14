@@ -58,13 +58,25 @@ export const appRouter = t.router({
       }))
       .output(z.array(ApiCalendarEvent))
       .query(async ({ input, ctx }) => {
-        const googleEvents = await calendarService.getEvents(
-          ctx.user.id,
-          input.timeMin,
-          input.timeMax
-        );
+        console.log('📅 Calendar getEvents called for user:', ctx.user.id);
+        console.log('📅 Input params:', input);
+        
+        let googleEvents;
+        try {
+          googleEvents = await calendarService.getEvents(
+            ctx.user.id,
+            input.timeMin,
+            input.timeMax
+          );
+          console.log('📅 Retrieved', googleEvents?.length || 0, 'events from Google Calendar');
+        } catch (error) {
+          console.error('📅 Error fetching Google Calendar events:', error);
+          throw error;
+        }
 
         // Map Google Calendar events to API shape
+        console.log('📅 Raw Google Calendar events:', JSON.stringify(googleEvents, null, 2));
+        
         const mapped: ApiCalendarEvent[] = (googleEvents || [])
           .map((ev: any) => {
             // Support all-day events that provide date instead of dateTime
@@ -79,9 +91,12 @@ export const appRouter = t.router({
                 ? new Date(ev.end.date + 'T00:00:00.000Z').toISOString()
                 : undefined;
 
-            if (!startIso || !endIso) return null;
+            if (!startIso || !endIso) {
+              console.log('❌ Skipping event due to missing dates:', ev.summary, 'start:', ev.start, 'end:', ev.end);
+              return null;
+            }
 
-            return {
+            const mappedEvent = {
               id: String(ev.id ?? `${startIso}-${endIso}`),
               title: String(ev.summary ?? 'Untitled'),
               description: ev.description ? String(ev.description) : undefined,
@@ -90,9 +105,13 @@ export const appRouter = t.router({
               allDay: !!ev.start?.date && !!ev.end?.date,
               location: ev.location ? String(ev.location) : undefined,
             } satisfies ApiCalendarEvent;
+            
+            console.log('✅ Mapped event:', mappedEvent);
+            return mappedEvent;
           })
           .filter(Boolean) as ApiCalendarEvent[];
 
+        console.log('📅 Final mapped events count:', mapped.length);
         return mapped;
       }),
 

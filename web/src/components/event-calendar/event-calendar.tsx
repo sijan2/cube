@@ -54,6 +54,8 @@ export interface EventCalendarProps {
   onEventDelete?: (eventId: string) => void;
   className?: string;
   initialView?: CalendarView;
+  onViewChange?: (view: CalendarView) => void;
+  onDateChange?: (date: Date) => void;
 }
 
 export function EventCalendar({
@@ -63,6 +65,8 @@ export function EventCalendar({
   onEventDelete,
   className,
   initialView = "month",
+  onViewChange,
+  onDateChange,
 }: EventCalendarProps) {
   // Use the shared calendar context instead of local state
   const { currentDate, setCurrentDate } = useCalendarContext();
@@ -90,15 +94,19 @@ export function EventCalendar({
       switch (e.key.toLowerCase()) {
         case "m":
           setView("month");
+          onViewChange?.("month");
           break;
         case "w":
           setView("week");
+          onViewChange?.("week");
           break;
         case "d":
           setView("day");
+          onViewChange?.("day");
           break;
         case "a":
           setView("agenda");
+          onViewChange?.("agenda");
           break;
       }
     };
@@ -111,33 +119,45 @@ export function EventCalendar({
   }, [isEventDialogOpen]);
 
   const handlePrevious = () => {
+    let newDate: Date;
     if (view === "month") {
-      setCurrentDate(subMonths(currentDate, 1));
+      newDate = subMonths(currentDate, 1);
     } else if (view === "week") {
-      setCurrentDate(subWeeks(currentDate, 1));
+      newDate = subWeeks(currentDate, 1);
     } else if (view === "day") {
-      setCurrentDate(addDays(currentDate, -1));
+      newDate = addDays(currentDate, -1);
     } else if (view === "agenda") {
       // For agenda view, go back 30 days (a full month)
-      setCurrentDate(addDays(currentDate, -AgendaDaysToShow));
+      newDate = addDays(currentDate, -AgendaDaysToShow);
+    } else {
+      newDate = currentDate;
     }
+    setCurrentDate(newDate);
+    onDateChange?.(newDate);
   };
 
   const handleNext = () => {
+    let newDate: Date;
     if (view === "month") {
-      setCurrentDate(addMonths(currentDate, 1));
+      newDate = addMonths(currentDate, 1);
     } else if (view === "week") {
-      setCurrentDate(addWeeks(currentDate, 1));
+      newDate = addWeeks(currentDate, 1);
     } else if (view === "day") {
-      setCurrentDate(addDays(currentDate, 1));
+      newDate = addDays(currentDate, 1);
     } else if (view === "agenda") {
       // For agenda view, go forward 30 days (a full month)
-      setCurrentDate(addDays(currentDate, AgendaDaysToShow));
+      newDate = addDays(currentDate, AgendaDaysToShow);
+    } else {
+      newDate = currentDate;
     }
+    setCurrentDate(newDate);
+    onDateChange?.(newDate);
   };
 
   const handleToday = () => {
-    setCurrentDate(new Date());
+    const today = new Date();
+    setCurrentDate(today);
+    onDateChange?.(today);
   };
 
   const handleEventSelect = (event: CalendarEvent) => {
@@ -265,7 +285,7 @@ export function EventCalendar({
 
   return (
     <div
-      className="flex has-data-[slot=month-view]:flex-1 flex-col rounded-lg"
+      className="flex has-data-[slot=month-view]:flex-1 flex-col rounded-lg h-full overflow-hidden"
       style={
         {
           "--event-height": `${EventHeight}px`,
@@ -349,21 +369,20 @@ export function EventCalendar({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-32">
-                  <DropdownMenuItem onClick={() => setView("month")}>
+                  <DropdownMenuItem onClick={() => { setView("month"); onViewChange?.("month"); }}>
                     Month <DropdownMenuShortcut>M</DropdownMenuShortcut>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setView("week")}>
+                  <DropdownMenuItem onClick={() => { setView("week"); onViewChange?.("week"); }}>
                     Week <DropdownMenuShortcut>W</DropdownMenuShortcut>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setView("day")}>
+                  <DropdownMenuItem onClick={() => { setView("day"); onViewChange?.("day"); }}>
                     Day <DropdownMenuShortcut>D</DropdownMenuShortcut>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setView("agenda")}>
+                  <DropdownMenuItem onClick={() => { setView("agenda"); onViewChange?.("agenda"); }}>
                     Agenda <DropdownMenuShortcut>A</DropdownMenuShortcut>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <ThemeToggle />
             </div>
           </div>
         </div>

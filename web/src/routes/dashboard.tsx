@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
 import BigCalendar from '@/components/big-calendar'
 import { CalendarProvider } from '@/components/event-calendar/calendar-context'
+import FloatingChatInput from '@/components/floating-chat-input'
 
 export const Route = createFileRoute('/dashboard')({
   component: DashboardPage,
@@ -24,8 +25,10 @@ function DashboardPage() {
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
-          <div className="flex flex-1 flex-col gap-4 p-2 pt-0">
+          <div className="relative flex flex-1 flex-col gap-4 p-2 pt-0 pb-0">
             <BigCalendar />
+            {/* Floating chat input overlay */}
+            <FloatingChatInput />
           </div>
         </SidebarInset>
       </SidebarProvider>

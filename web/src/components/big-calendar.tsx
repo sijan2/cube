@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { addDays, setHours, setMinutes, getDay } from "date-fns";
 import { useCalendarContext } from "@/components/event-calendar/calendar-context";
+import { trpc } from "@/lib/trpc";
 
 import {
   EventCalendar,
@@ -603,47 +604,275 @@ const sampleEvents: CalendarEvent[] = [
 ];
 
 export default function Component({ apiEvents }: { apiEvents?: ApiCalendarEvent[] }) {
-  const [events, setEvents] = useState<CalendarEvent[]>(sampleEvents);
-  const { isColorVisible } = useCalendarContext();
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [currentView, setCurrentView] = useState<'month' | 'week' | 'day' | 'agenda'>('week');
+  const { currentDate, setCurrentDate, isColorVisible } = useCalendarContext();
+
+  // Calculate date range based on current view and date
+  const dateRange = useMemo(() => {
+    const baseDate = currentDate;
+    let startDate: Date;
+    let endDate: Date;
+
+    switch (currentView) {
+      case 'month': {
+        // Show full month + some padding
+        startDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
+        endDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0);
+        // Add some padding
+        startDate.setDate(startDate.getDate() - 7);
+        endDate.setDate(endDate.getDate() + 7);
+        break;
+      }
+      case 'week': {
+        // Exactly the current week (Sunday to Saturday)
+        const startOfWeek = new Date(baseDate);
+        startOfWeek.setDate(baseDate.getDate() - baseDate.getDay()); // Sunday
+        startDate = new Date(startOfWeek);
+        endDate = new Date(startOfWeek);
+        endDate.setDate(endDate.getDate() + 6); // Saturday
+        break;
+      }
+      case 'day': {
+        // Show current day + some padding
+        startDate = new Date(baseDate);
+        startDate.setDate(startDate.getDate() - 1); // 1 day before
+        endDate = new Date(baseDate);
+        endDate.setDate(endDate.getDate() + 2); // 2 days after
+        break;
+      }
+      case 'agenda': {
+        // Show current date + extended range for agenda
+        startDate = new Date(baseDate);
+        startDate.setDate(startDate.getDate() - 7); // 1 week before
+        endDate = new Date(baseDate);
+        endDate.setDate(endDate.getDate() + 30); // 30 days after
+        break;
+      }
+      default: {
+        // Fallback to week view
+        const startOfWeek = new Date(baseDate);
+        startOfWeek.setDate(baseDate.getDate() - baseDate.getDay()); // Sunday
+        startDate = new Date(startOfWeek);
+        startDate.setDate(startDate.getDate() - 7); // 1 week before
+        
+        endDate = new Date(startOfWeek);
+        endDate.setDate(endDate.getDate() + 21); // 3 weeks after
+        break;
+      }
+    }
+
+    // Ensure start time is beginning of day, end time is end of day
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    const range = {
+      timeMin: startDate.toISOString(),
+      timeMax: endDate.toISOString(),
+    };
+
+    console.log('📅 Fetching events for range:', {
+      view: currentView,
+      baseDate: baseDate.toDateString(),
+      startDate: startDate.toDateString(),
+      endDate: endDate.toDateString(),
+      range
+    });
+
+    return range;
+  }, [currentDate, currentView]);
+
+  // Fetch real Google Calendar events via tRPC
+  const { data: trpcEvents, isLoading, error, refetch } = trpc.calendar.getEvents.useQuery(dateRange, {
+    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes  
+    staleTime: 60 * 1000, // Consider data stale after 1 minute
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnMount: true, // Always refetch when component mounts
+    retry: (failureCount, error) => {
+      // Don't retry on authentication errors
+      if (error?.data?.code === 'UNAUTHORIZED') {
+        return false;
+      }
+      // Retry up to 2 times for other errors
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
 
   // Map API events (ISO strings) to CalendarEvent (Date objects)
   useEffect(() => {
-    if (!apiEvents) return;
-    try {
-      const mapped: CalendarEvent[] = apiEvents.map((ev) => ({
-        id: ev.id,
-        title: ev.title ?? "Untitled",
-        description: ev.description,
-        start: new Date(ev.start),
-        end: new Date(ev.end),
-        allDay: ev.allDay,
-        // Optional mapping for color/label can be added later
-      }));
-      setEvents(mapped);
-    } catch (_e) {
-      // keep sample events on error
+    console.log('🔄 useEffect triggered - isLoading:', isLoading, 'trpcEvents:', trpcEvents?.length, 'apiEvents:', apiEvents?.length);
+    
+    // Prefer tRPC events over apiEvents prop
+    const sourceEvents = trpcEvents || apiEvents;
+    
+    if (sourceEvents && sourceEvents.length > 0) {
+      try {
+        const mapped: CalendarEvent[] = sourceEvents.map((ev) => ({
+          id: ev.id,
+          title: ev.title ?? "Untitled",
+          description: ev.description,
+          start: new Date(ev.start),
+          end: new Date(ev.end),
+          allDay: ev.allDay,
+          location: ev.location,
+          color: "blue", // Default color for Gmail events
+        }));
+        setEvents(mapped);
+        console.log(`✅ Loaded ${mapped.length} real events from Gmail/Google Calendar`);
+      } catch (_e) {
+        console.error('❌ Error mapping calendar events:', _e);
+        // Use sample events as fallback only on error
+        setEvents(sampleEvents);
+      }
+    } else if (!isLoading) {
+      // No events returned for the range; show an empty calendar (no sample fallback)
+      console.log('📝 No Gmail events found for this range');
+      setEvents([]);
     }
-  }, [apiEvents]);
+  }, [trpcEvents, apiEvents, isLoading]);
+
+  // Get tRPC utils for invalidation
+  const utils = trpc.useUtils();
+
+  // tRPC mutations
+  const createEventMutation = trpc.calendar.createEvent.useMutation({
+    onSuccess: () => {
+      // Refetch events after creating
+      utils.calendar.getEvents.invalidate();
+    },
+  });
+
+  const updateEventMutation = trpc.calendar.updateEvent.useMutation({
+    onSuccess: () => {
+      // Refetch events after updating
+      utils.calendar.getEvents.invalidate();
+    },
+  });
+
+  const deleteEventMutation = trpc.calendar.deleteEvent.useMutation({
+    onSuccess: () => {
+      // Refetch events after deleting
+      utils.calendar.getEvents.invalidate();
+    },
+  });
 
   // Filter events based on visible colors
   const visibleEvents = useMemo(() => {
     return events.filter((event) => isColorVisible(event.color));
   }, [events, isColorVisible]);
 
-  const handleEventAdd = (event: CalendarEvent) => {
-    setEvents([...events, event]);
+  const handleEventAdd = async (event: CalendarEvent) => {
+    try {
+      // Try to create via API first
+      await createEventMutation.mutateAsync({
+        summary: event.title,
+        description: event.description,
+        start: {
+          dateTime: event.start.toISOString(),
+        },
+        end: {
+          dateTime: event.end.toISOString(),
+        },
+      });
+    } catch (error) {
+      // Fallback to local state if API fails
+      console.error('Failed to create event via API:', error);
+      setEvents([...events, event]);
+    }
   };
 
-  const handleEventUpdate = (updatedEvent: CalendarEvent) => {
-    setEvents(
-      events.map((event) =>
-        event.id === updatedEvent.id ? updatedEvent : event,
-      ),
+  const handleEventUpdate = async (updatedEvent: CalendarEvent) => {
+    try {
+      // Try to update via API first
+      await updateEventMutation.mutateAsync({
+        eventId: updatedEvent.id,
+        summary: updatedEvent.title,
+        description: updatedEvent.description,
+        start: {
+          dateTime: updatedEvent.start.toISOString(),
+        },
+        end: {
+          dateTime: updatedEvent.end.toISOString(),
+        },
+      });
+    } catch (error) {
+      // Fallback to local state if API fails
+      console.error('Failed to update event via API:', error);
+      setEvents(
+        events.map((event) =>
+          event.id === updatedEvent.id ? updatedEvent : event,
+        ),
+      );
+    }
+  };
+
+  const handleEventDelete = async (eventId: string) => {
+    try {
+      // Try to delete via API first
+      await deleteEventMutation.mutateAsync({
+        eventId,
+      });
+    } catch (error) {
+      // Fallback to local state if API fails
+      console.error('Failed to delete event via API:', error);
+      setEvents(events.filter((event) => event.id !== eventId));
+    }
+  };
+
+  // Show loading or error states
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p>Loading Gmail/Google Calendar events...</p>
+        </div>
+      </div>
     );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center max-w-md">
+          <p className="text-red-500 mb-2">Error loading Gmail events:</p>
+          <p className="text-sm text-gray-600 mb-4">{error.message}</p>
+          {error.data?.code === 'UNAUTHORIZED' ? (
+            <div className="space-y-2">
+              <p className="text-xs text-gray-400">Please re-authenticate your Google account</p>
+              <button 
+                onClick={() => window.location.href = '/api/auth/signin'} 
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Sign in again
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-gray-400">Showing sample events instead</p>
+              <button 
+                onClick={() => refetch()} 
+                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Handle view/date changes from the calendar component
+  const handleViewChange = (newView: 'month' | 'week' | 'day') => {
+    console.log('📅 View changed to:', newView);
+    setCurrentView(newView);
   };
 
-  const handleEventDelete = (eventId: string) => {
-    setEvents(events.filter((event) => event.id !== eventId));
+  const handleDateChange = (newDate: Date) => {
+    console.log('📅 Date changed to:', newDate.toDateString());
+    setCurrentDate(newDate);
   };
 
   return (
@@ -653,6 +882,8 @@ export default function Component({ apiEvents }: { apiEvents?: ApiCalendarEvent[
       onEventUpdate={handleEventUpdate}
       onEventDelete={handleEventDelete}
       initialView="week"
+      onViewChange={handleViewChange}
+      onDateChange={handleDateChange}
     />
   );
 }
