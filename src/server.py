@@ -6,8 +6,10 @@ import requests
 from datetime import datetime
 from typing import Optional, Dict, List, Any
 from fastmcp import FastMCP
+from neo4j import GraphDatabase
+import openai
 
-mcp = FastMCP("LeetCode MCP Server")
+mcp = FastMCP("LeetCode + Zep MCP Server")
 
 class LeetCodeService:
     def __init__(self, site: str = "global"):
@@ -29,7 +31,7 @@ class LeetCodeService:
         }
         
         try:
-            response = self.session.post(self.graphql_url, json=payload, headers=headers)
+            response = self.session.post(self.graphql_url, json=payload, headers=headers, timeout=600)
             response.raise_for_status()
             return response.json()
         except Exception as e:
@@ -37,6 +39,48 @@ class LeetCodeService:
 
 # Initialize LeetCode service
 leetcode_service = LeetCodeService()
+
+class ZepGraphitiService:
+    def __init__(self):
+        self.openai_api_key = os.getenv("OPENAI_API_KEY")
+        self.model_name = os.getenv("ZEP_MODEL_NAME", "gpt-4o-mini")
+        self.neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+        self.neo4j_user = os.getenv("NEO4J_USER", "neo4j")
+        self.neo4j_password = os.getenv("NEO4J_PASSWORD")
+        
+        self.driver = None
+        self.openai_client = None
+        
+        # Initialize connections if credentials are available
+        if self.openai_api_key:
+            openai.api_key = self.openai_api_key
+            self.openai_client = openai.OpenAI(api_key=self.openai_api_key)
+            
+        if self.neo4j_password:
+            try:
+                self.driver = GraphDatabase.driver(
+                    self.neo4j_uri,
+                    auth=(self.neo4j_user, self.neo4j_password)
+                )
+            except Exception as e:
+                print(f"⚠️  Neo4j connection failed: {e}")
+                self.driver = None
+        
+        self.enabled = bool(self.openai_client and self.driver)
+        if self.enabled:
+            print("✅ Zep Graphiti service initialized")
+        else:
+            print("⚠️  Zep Graphiti not fully configured (requires OPENAI_API_KEY and Neo4j)")
+
+    def is_enabled(self):
+        return self.enabled
+
+    def close(self):
+        if self.driver:
+            self.driver.close()
+
+# Initialize Zep service
+zep_service = ZepGraphitiService()
 
 # LeetCode Problem Tools
 @mcp.tool(description="Get today's LeetCode Daily Challenge problem")
@@ -283,6 +327,123 @@ def get_user_profile(username: str) -> dict:
     except Exception as e:
         return {"success": False, "error": f"Failed to parse user profile: {str(e)}"}
 
+# Zep Graphiti Tools
+@mcp.tool(description="Store knowledge in the Zep Graphiti knowledge graph")
+def zep_add_knowledge(text: str, group_id: str = "default") -> dict:
+    """Add knowledge to the Zep Graphiti knowledge graph"""
+    if not zep_service.is_enabled():
+        return {"success": False, "error": "Zep Graphiti not configured. Need OPENAI_API_KEY and Neo4j."}
+    
+    try:
+        # Simple implementation - in a real setup you'd use the full Graphiti library
+        with zep_service.driver.session() as session:
+            result = session.run(
+                "CREATE (k:Knowledge {text: $text, group_id: $group_id, created_at: datetime()}) RETURN k",
+                text=text, group_id=group_id
+            )
+            node = result.single()
+            
+            return {
+                "success": True,
+                "message": "Knowledge stored in Zep Graphiti",
+                "node_id": str(node["k"].id) if node else None
+            }
+    except Exception as e:
+        return {"success": False, "error": f"Failed to store knowledge: {str(e)}"}
+
+@mcp.tool(description="Search knowledge in the Zep Graphiti knowledge graph")
+def zep_search_knowledge(query: str, group_id: str = "default", limit: int = 10) -> dict:
+    """Search for knowledge in the Zep Graphiti knowledge graph"""
+    if not zep_service.is_enabled():
+        return {"success": False, "error": "Zep Graphiti not configured. Need OPENAI_API_KEY and Neo4j."}
+    
+    try:
+        with zep_service.driver.session() as session:
+            # Simple text search - in a real setup you'd use semantic search
+            result = session.run(
+                """
+                MATCH (k:Knowledge) 
+                WHERE k.group_id = $group_id AND k.text CONTAINS $query
+                RETURN k.text as text, k.created_at as created_at, id(k) as node_id
+                ORDER BY k.created_at DESC
+                LIMIT $limit
+                """,
+                query=query, group_id=group_id, limit=limit
+            )
+            
+            knowledge = []
+            for record in result:
+                knowledge.append({
+                    "text": record["text"],
+                    "created_at": str(record["created_at"]),
+                    "node_id": record["node_id"]
+                })
+            
+            return {
+                "success": True,
+                "knowledge": knowledge,
+                "count": len(knowledge)
+            }
+    except Exception as e:
+        return {"success": False, "error": f"Failed to search knowledge: {str(e)}"}
+
+@mcp.tool(description="Get Zep Graphiti service status and configuration")
+def zep_get_status() -> dict:
+    """Get the status of Zep Graphiti service"""
+    return {
+        "enabled": zep_service.is_enabled(),
+        "openai_configured": bool(zep_service.openai_client),
+        "neo4j_configured": bool(zep_service.driver),
+        "neo4j_uri": zep_service.neo4j_uri,
+        "model_name": zep_service.model_name,
+        "message": "Zep Graphiti service status"
+    }
+
+@mcp.tool(description="Generate AI insights from stored knowledge using OpenAI")
+def zep_generate_insights(topic: str, group_id: str = "default") -> dict:
+    """Generate AI insights from stored knowledge on a specific topic"""
+    if not zep_service.is_enabled():
+        return {"success": False, "error": "Zep Graphiti not configured. Need OPENAI_API_KEY and Neo4j."}
+    
+    try:
+        # First, search for relevant knowledge
+        search_result = zep_search_knowledge(topic, group_id, 5)
+        
+        if not search_result["success"] or not search_result["knowledge"]:
+            return {"success": False, "error": "No relevant knowledge found for this topic"}
+        
+        # Prepare context from stored knowledge
+        context = "\n".join([k["text"] for k in search_result["knowledge"]])
+        
+        # Generate insights using OpenAI
+        response = zep_service.openai_client.chat.completions.create(
+            model=zep_service.model_name,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an AI assistant that generates insights from stored knowledge. Provide concise, actionable insights."
+                },
+                {
+                    "role": "user",
+                    "content": f"Based on this stored knowledge about '{topic}', generate key insights:\n\n{context}"
+                }
+            ],
+            max_tokens=500,
+            temperature=0.7
+        )
+        
+        insights = response.choices[0].message.content
+        
+        return {
+            "success": True,
+            "topic": topic,
+            "insights": insights,
+            "knowledge_sources": len(search_result["knowledge"])
+        }
+        
+    except Exception as e:
+        return {"success": False, "error": f"Failed to generate insights: {str(e)}"}
+
 # Sample tools (keeping original ones too)
 @mcp.tool(description="Greet a user by name with a welcome message from the MCP server")
 def greet(name: str) -> str:
@@ -301,17 +462,25 @@ def get_server_info() -> dict:
             "get_problem", 
             "search_problems",
             "get_user_profile",
+            "zep_add_knowledge",
+            "zep_search_knowledge",
+            "zep_get_status",
+            "zep_generate_insights",
             "greet",
             "get_server_info"
-        ]
+        ],
+        "zep_enabled": zep_service.is_enabled()
     }
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     host = "0.0.0.0"
     
-    print(f"Starting LeetCode FastMCP server on {host}:{port}")
+    print(f"Starting LeetCode + Zep FastMCP server on {host}:{port}")
     print(f"LeetCode site: {leetcode_service.site}")
+    print(f"Zep Graphiti enabled: {zep_service.is_enabled()}")
+    print(f"Request timeout: 600 seconds")
+    print(f"Available tools: 10")
     
     mcp.run(
         transport="http",
