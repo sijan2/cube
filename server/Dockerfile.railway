@@ -1,0 +1,24 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile --prod
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN pnpm run build
+
+# Expose port (Railway will assign PORT env var)
+EXPOSE $PORT
+
+# Start the server with Railway's PORT
+CMD ["sh", "-c", "PORT=${PORT:-3002} node dist/index.js"]
