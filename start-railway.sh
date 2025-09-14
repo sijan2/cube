@@ -12,4 +12,4 @@ echo "  - Node Environment: ${NODE_ENV:-production}"
 
 # Start MetaMCP with our configuration
 echo "🔧 Starting MetaMCP proxy..."
-exec ./metamcp --config metamcp-config.json
+exec /usr/local/bin/metamcp --config metamcp-config.json
