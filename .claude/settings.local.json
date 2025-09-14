@@ -17,7 +17,9 @@
       "Bash(npm run dev:*)",
       "Bash(npm run build:*)",
       "Bash(taskkill:*)",
-      "Bash(netstat:*)"
+      "Bash(netstat:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)"
     ],
     "additionalDirectories": [
       "/Users/sijan/hackmit/ui-experiments/apps/experiment-06"
