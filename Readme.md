@@ -1,3 +1,1 @@
-# mcp² - Your Personal AI Assistant Ecosystem
-
-**Built at HackMIT 2025**
+mcp² - HackMIT 2025 Project
